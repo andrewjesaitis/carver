@@ -17,6 +17,7 @@ export default class Carver {
     }
 
     initCanvas() {
+        $('#canvas').show();
         this.canvas.width = this.image.width;
         this.canvas.height = this.image.height;
         this.ctx.drawImage(this.image, 0, 0);

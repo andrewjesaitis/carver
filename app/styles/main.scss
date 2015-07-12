@@ -98,4 +98,14 @@ body {
   .controls, image-container {
     margin-bottom: 15px;
   }
+
+  .image-canvas {
+    display: none;
+  }
+
+  .vcenter {
+    display: inline-block;
+    vertical-align: middle;
+    float: none;
+}
 }

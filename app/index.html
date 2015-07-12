@@ -47,7 +47,22 @@
             <h3 class="text-muted">carver</h3>
         </div>
         <div class="controls row">
-            <div class="col-md-12">
+            <div class="col-md-5 vcenter">
+              <div class="image-btns btn-group" data-toggle="buttons">
+                  <label id="original-btn" class="btn btn-primary active">
+                      <input type="radio" autocomplete="off" checked> Original
+                  </label>
+                  <label id="grayscale-btn" class="btn btn-primary">
+                      <input  type="radio" autocomplete="off"> Grayscale
+                  </label>
+                  <label id="gradiant-btn-x" class="btn btn-primary">
+                      <input type="radio" autocomplete="off"> Gradiant X
+                  </label>
+                  <label id="gradiant-btn-y" class="btn btn-primary">
+                      <input type="radio" autocomplete="off"> Gradiant Y
+                  </label>
+                </div>
+                </div><div class="col-md-7 vcenter">
                 <form class="form-inline">
                     <div class="form-group">
                         <div class="input-group">
@@ -97,17 +112,11 @@
                 </div>
             </div>
             <div class="image-container col-md-12">
-                <canvas id="canvas"></canvas>
+                <canvas class="image-canvas" id="canvas"></canvas>
+                <canvas class="image-canvas" id="grayscale-canvas"></canvas>
+                <canvas class="image-canvas" id="gradiant-canvas-x"></canvas>
+                <canvas class="image-canvas" id="gradiant-canvas-y"></canvas>
             </div>
-        </div>
-        <div class="grayscale-image-container col-md-12">
-                <canvas id="grayscale-canvas"></canvas>
-        </div>
-        <div class="gradiant-image-container col-md-12">
-                <canvas id="gradiant-canvas-x"></canvas>
-        </div>
-        <div class="gradiant-image-container col-md-12">
-                <canvas id="gradiant-canvas-y"></canvas>
         </div>
         <div class="row marketing">
             <div class="footer">
