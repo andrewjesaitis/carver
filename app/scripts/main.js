@@ -1,24 +1,20 @@
 // jshint devel:true
 'use strict';
 
+import Carver from './carver.js';
+
 $(document).ready(function() {
 
-	var canvas = $('#canvas')[0];
-	var ctx = canvas.getContext('2d');
+	var carver = new Carver();
 
 	function loadImage(imgUrl) {
-		$(".intro").slideUp(400, function(){
-			$(".image-container").slideDown(600);
+		$('.current-content').slideUp(400, function(){
+			$('.intro').hide();
+			carver.setImage(imgUrl);
+			$(".current-content").slideDown(600);
 		});
-		var img = new Image();
-		img.onload = function(){
-			canvas.width = img.width;
-			canvas.height = img.height;
-			ctx.drawImage(img, 0, 0);
-			$("input#horizontal-size").val(img.width);
-			$("input#vertical-size").val(img.height);
-		};
-		img.src = imgUrl;
+		console.log(imgUrl);
+		
 	}
 
 	function handleImage(e){
@@ -30,7 +26,7 @@ $(document).ready(function() {
 	}
 
 	$('#ballon-link').on('click', function(){
-		console.log("called");
+		console.log('called');
 		loadImage('./images/ballon.jpg');
 	});
 

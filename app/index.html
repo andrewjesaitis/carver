@@ -69,7 +69,8 @@
                 </form>
             </div>
         </div>
-        <div class="intro jumbotron">
+        <div class="current-content row">
+          <div class="intro jumbotron">
                 <h1>Load an image to get started</h1>
                 <p>Seam carving is a technique to resize images without distorting content</p>
                 <p><a class="btn btn-primary btn-lg" href="#" class="dropdown-toggle" data-target="#load-image-modal" data-toggle="modal" role="button">Load Image<a></p>
@@ -95,16 +96,25 @@
                   </div>
                 </div>
             </div>
-        <div class="row">
             <div class="image-container col-md-12">
                 <canvas id="canvas"></canvas>
             </div>
+        </div>
+        <div class="grayscale-image-container col-md-12">
+                <canvas id="grayscale-canvas"></canvas>
+        </div>
+        <div class="gradiant-image-container col-md-12">
+                <canvas id="gradiant-canvas-x"></canvas>
+        </div>
+        <div class="gradiant-image-container col-md-12">
+                <canvas id="gradiant-canvas-y"></canvas>
         </div>
         <div class="row marketing">
             <div class="footer">
                 <p><span class="glyphicon glyphicon-dashboard"></span> Goes to 11</p>
             </div>
         </div>
+        <script src="bower_components/jsfeat/build/jsfeat.js"></script>
         <!-- build:js(.) scripts/vendor.js -->
         <!-- bower:js -->
         <script src="bower_components/jquery/dist/jquery.js"></script>
