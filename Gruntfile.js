@@ -371,7 +371,7 @@ module.exports = function (grunt) {
           cwd: '<%= config.app %>',
           dest: '<%= config.dist %>',
           src: [
-            '*.{ico,png,txt}',
+            '*.{ico,png,txt,jpg}',
             'images/{,*/}*.webp',
             '{,*/}*.html',
             'styles/fonts/{,*/}*.*'
@@ -413,7 +413,7 @@ module.exports = function (grunt) {
         'browserify'
       ],
       dist: [
-        'browserifys',
+        'browserify',
         'sass',
         'imagemin',
         'svgmin'
@@ -470,7 +470,7 @@ module.exports = function (grunt) {
     'uglify',
     'copy:dist',
     'modernizr',
-    'filerev',
+    // 'filerev',
     'usemin',
     'htmlmin'
   ]);

@@ -13,6 +13,9 @@
         "assets/fonts/bootstrap/*",
         "assets/javascripts/bootstrap.js"
       ]
+    },
+    "jsfeat": {
+      "main": ["build/jsfeat.js"]
     }
   },
   "devDependencies": {
