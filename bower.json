@@ -4,7 +4,8 @@
   "dependencies": {
     "bootstrap-sass": "~3.3.5",
     "modernizr": "~2.8.3",
-    "jsfeat": "~0.0.8"
+    "jsfeat": "~0.0.8",
+    "underscore": "~1.8.3"
   },
   "overrides": {
     "bootstrap-sass": {
@@ -15,7 +16,9 @@
       ]
     },
     "jsfeat": {
-      "main": ["build/jsfeat.js"]
+      "main": [
+        "build/jsfeat.js"
+      ]
     }
   },
   "devDependencies": {
