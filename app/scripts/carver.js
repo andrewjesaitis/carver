@@ -23,10 +23,12 @@ export default class Carver {
         this.ctx.drawImage(this.image, 0, 0);
         $('input#horizontal-size').val(this.image.width);
         $('input#vertical-size').val(this.image.height);
+
+        //TODO: Break this out into methods to be called from the UI
         this.convertGrayscale();
         this.computeGradiant();
-        this.computeVerticalSeams();
-        var seam = this.getSeam();
+        this.computeEnergy();
+        var seam = this.computeSeams(50);
         var grayscaleData = this.grayscaleCtx.getImageData(0, 0, this.grayscaleCanvas.width, this.grayscaleCanvas.height);
         var data = this.traceSeam(seam, grayscaleData);
         this.grayscaleCtx.putImageData(grayscaleData, 0, 0);
@@ -84,7 +86,7 @@ export default class Carver {
         this.yGradiantCtx.putImageData(yImageData, 0, 0);
     }
 
-    computeVerticalSeams() {
+    computeEnergy() {
         // we compute the seams using dynamic programing
 
         this.costMatrix = [];
@@ -183,35 +185,46 @@ export default class Carver {
         return parents;
     }
 
-    getSeam() {
+    computeSeams(numSeams) {
         //scan last row of costs for minimum
         var lastRowIdx = this.canvas.height - 1;
-        console.log(lastRowIdx);
-        console.log(this.costMatrix);
-        var minCost = this.costMatrix[0][lastRowIdx];
-        var minXPos = 0;
+        var minCosts = [{'pos': 0, 'cost': this.costMatrix[0][lastRowIdx]}];
         for (var i = 0; i < this.costMatrix.length; i++) {
             var curCost = this.costMatrix[i][lastRowIdx];
-            if(curCost < minCost){
-                minCost = curCost;
-                minXPos = i;
+            if(Object.keys(minCosts).length <= numSeams){
+                minCosts.push({'pos' : i, 'cost': curCost});
+            } else {
+                var maxItem = _.max(minCosts, function(item){return item.cost;});
+                if (curCost < maxItem.cost) {
+                    minCosts.push({'pos' : i, 'cost': curCost});
+                    minCosts = _.filter(minCosts, function(item){ return item.cost < maxItem.cost;});
+                }
             }
         }
 
-        var seam = [];
-        for (var i = lastRowIdx; i > 0; i--) {
-            seam[i] = minXPos;
-            var parent = this.parentMatrix[minXPos][i];
-            minXPos = parent.x;
+        // take those positions and follow the min cost route back to the top
+        var seams = [];
+        for(var i = 0; i < minCosts.length; i++){
+            var x =  minCosts[i].pos;
+            var seam = [];
+            for(var y = lastRowIdx; y > 0; y--){
+                seam.push({'x': x, 'y': y});
+                var parent = this.parentMatrix[x][y];
+                x = parent.x;
+            }
+            seams.push(seam);
         }
 
-        return seam;
+        return seams;
     }
 
-    traceSeam(seam, imageData) {
+    traceSeam(seams, imageData) {
         var uInt32Data = new Uint32Array(imageData.data.buffer);
-        for (var i = 0; i < seam.length; i++) {
-            uInt32Data[this.at(seam[i], i)] = (0xff << 24) | (0 << 16) | (0 << 8) | (0xff);
+        for(var i = 0; i < seams.length; i++){
+            var seam = seams[i]
+            for (var j = 0; j < seam.length; j++) {
+                uInt32Data[this.at(seam[j].x, seam[j].y)] = (0xff << 24) | (0 << 16) | (0 << 8) | (0xff);
+            }
         }
         return imageData;
     }

@@ -13,7 +13,6 @@ $(document).ready(function() {
 			carver.setImage(imgUrl);
 			$(".current-content").slideDown(600);
 		});
-		console.log(imgUrl);
 		
 	}
 
