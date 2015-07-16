@@ -29,6 +29,21 @@ export default class Carver {
         }
     }
 
+    drawSeams () {
+        this.convertGrayscale();
+        this.computeGradiant();
+        this.computeEnergy();
+        var seam = this.computeSeams(20);
+        var grayscaleData = this.grayscaleCtx.getImageData(0, 0, this.grayscaleCanvas.width, this.grayscaleCanvas.height);
+        this.cachedGrayscaleData = copyArrayBuffer(grayscaleData);
+        var data = this.traceSeam(seam, grayscaleData);
+        this.grayscaleCtx.putImageData(grayscaleData, 0, 0);
+    }
+
+    hideSeams() {
+        this.grayscaleCtx.putImageData(this.cachedGrayscaleData);
+    }
+
     resizeHorz() {
         this.convertGrayscale();
         this.computeGradiant();
