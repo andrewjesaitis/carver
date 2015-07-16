@@ -23,15 +23,27 @@ export default class Carver {
         this.ctx.drawImage(this.image, 0, 0);
         $('input#horizontal-size').val(this.image.width);
         $('input#vertical-size').val(this.image.height);
+        for(var i =0; i < 150; i++){
+            this.resizeHorz();
+            console.log(i/150 + "%")
+        }
+    }
 
-        //TODO: Break this out into methods to be called from the UI
+    resizeHorz() {
         this.convertGrayscale();
         this.computeGradiant();
         this.computeEnergy();
-        var seam = this.computeSeams(50);
-        var grayscaleData = this.grayscaleCtx.getImageData(0, 0, this.grayscaleCanvas.width, this.grayscaleCanvas.height);
-        var data = this.traceSeam(seam, grayscaleData);
-        this.grayscaleCtx.putImageData(grayscaleData, 0, 0);
+        var seam = this.computeSeams(1)[0];
+        var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.ripSeam(seam, imageData);
+        this.canvas.width = this.canvas.width-1;
+        this.ctx.putImageData(imageData, 0, 0);
+    }
+
+    copyArrayBuffer(src) {
+        var target = new ArrayBuffer(src.length);
+        new Uint32Array(target).set(new Uint32Array(src));
+        return target;
     }
 
     convertGrayscale() {
@@ -187,6 +199,7 @@ export default class Carver {
 
     computeSeams(numSeams) {
         //scan last row of costs for minimum
+        //TODO: Just sort the last row, and slice it?
         var lastRowIdx = this.canvas.height - 1;
         var minCosts = [{'pos': 0, 'cost': this.costMatrix[0][lastRowIdx]}];
         for (var i = 0; i < this.costMatrix.length; i++) {
@@ -201,14 +214,18 @@ export default class Carver {
                 }
             }
         }
-
+        minCosts = minCosts.slice(0, numSeams);
         // take those positions and follow the min cost route back to the top
         var seams = [];
         for(var i = 0; i < minCosts.length; i++){
             var x =  minCosts[i].pos;
             var seam = [];
-            for(var y = lastRowIdx; y > 0; y--){
+            for(var y = lastRowIdx; y >= 0; y--){
                 seam.push({'x': x, 'y': y});
+                //TODO: Shitty Construction, fix it
+                if(y ===0) {
+                    break;
+                }
                 var parent = this.parentMatrix[x][y];
                 x = parent.x;
             }
@@ -227,6 +244,22 @@ export default class Carver {
             }
         }
         return imageData;
+    }
+
+    ripSeam(seam, imageData) {
+        var uInt32Data = new Uint32Array(imageData.data.buffer);
+        var target = new Uint32Array((this.canvas.width-1)*(this.canvas.height))
+        for (var y = 0; y < this.canvas.height; y++) {
+            var pixel = _.find(seam, function (pix) { return pix.y === y});
+            for (var x = 0; x < this.canvas.width; x++){
+                if(x < pixel.x) {
+                    uInt32Data[this.at(x,y)] = uInt32Data[this.at(x,y)];
+                } else {
+                    uInt32Data[this.at(x,y)] = uInt32Data[this.at(x+1,y)];
+                }
+                
+            }
+        }
     }
 
 
