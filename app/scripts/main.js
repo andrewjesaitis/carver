@@ -40,7 +40,11 @@ $(document).ready(function() {
 
 	$('#upload').on('change', handleImage);
 
-	$('#tower-link').click();
+	$('#resize').on('click', function(){
+		var newWidth = parseInt($('#horizontal-size').val());
+		var newHeight = parseInt($('#vertical-size').val());
+		carver.resize(newWidth, newHeight);
+	});
 
 	$('.image-btns').on('click', function(e){
 		$('.image-canvas').hide()
@@ -55,5 +59,7 @@ $(document).ready(function() {
 			$('#gradiant-canvas-y').show();
 		}
 	});
+
+	$('#tower-link').click();
 
 });

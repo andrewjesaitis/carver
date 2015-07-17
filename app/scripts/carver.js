@@ -21,12 +21,25 @@ export default class Carver {
         this.canvas.width = this.image.width;
         this.canvas.height = this.image.height;
         this.ctx.drawImage(this.image, 0, 0);
-        $('input#horizontal-size').val(this.image.width);
-        $('input#vertical-size').val(this.image.height);
-        for(var i =0; i < 150; i++){
-            this.resizeHorz();
-            console.log(i/150 + "%")
+        $('#horizontal-size').val(this.canvas.width);
+        $('#vertical-size').val(this.canvas.height);
+    }
+
+    resize(newWidth, newHeight) {
+        console.log(newWidth, newHeight);
+        if(newHeight !== this.canvas.height){
+            console.log("Height adjustment not implemented...yet");
         }
+        var colDelta = this.canvas.width - newWidth;
+        if(colDelta > 0){
+            console.log("Cannot increase image size...yet");
+        }
+        for(var i =0; i < colDelta; i++){
+            this.resizeHorz();
+            console.log(i/colDelta + "%")
+        }
+        $('#horizontal-size').val(this.canvas.width);
+        $('#vertical-size').val(this.canvas.height);
     }
 
     drawSeams () {
