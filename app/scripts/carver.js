@@ -23,6 +23,9 @@ export default class Carver {
         this.ctx.drawImage(this.image, 0, 0);
         $('#horizontal-size').val(this.canvas.width);
         $('#vertical-size').val(this.canvas.height);
+        this.convertGrayscale();
+        this.computeGradiant();
+        this.computeEnergy();
     }
 
     resize(newWidth, newHeight) {
@@ -72,8 +75,14 @@ export default class Carver {
         this.ripSeam(seam, orientation, imageData);
         if (orientation === 'vertical') {
             this.canvas.width = this.canvas.width-1;
+            this.grayscaleCanvas.width = this.grayscaleCanvas.width-1;
+            this.xGradiantCanvas.width = this.xGradiantCanvas.width-1;
+            this.yGradiantCanvas.width = this.yGradiantCanvas.width-1;
         } else if (orientation === 'horizontal'){
             this.canvas.height = this.canvas.height-1;
+            this.grayscaleCanvas.height = this.grayscaleCanvas.height-1;
+            this.xGradiantCanvas.height = this.xGradiantCanvas.height-1;
+            this.yGradiantCanvas.height = this.yGradiantCanvas.height-1;
         }
         this.ctx.putImageData(imageData, 0, 0);
     }
