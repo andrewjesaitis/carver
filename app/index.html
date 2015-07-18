@@ -47,7 +47,7 @@
             <h3 class="text-muted">carver</h3>
         </div>
         <div class="controls row">
-            <div class="col-md-5 vcenter">
+            <div class="col-md-7 vcenter">
               <div class="image-btns btn-group" data-toggle="buttons">
                   <label id="original-btn" class="btn btn-primary active">
                       <input type="radio" autocomplete="off" checked> Original
@@ -56,22 +56,33 @@
                       <input type="radio" autocomplete="off"> Dual Gradiant
                   </label>
                 </div>
-                </div><div class="col-md-7 vcenter">
+                <div class="seam-btns btn-group" data-toggle="buttons">
+                  <label id="no-seams-btn" class="btn btn-primary active">
+                      <input type="radio" autocomplete="off" checked> None
+                  </label>
+                  <label id="vertical-seams-btn" class="btn btn-primary">
+                      <input type="radio" autocomplete="off"> Vertical Seams
+                  </label>
+                  <label id="horizontal-seams-btn" class="btn btn-primary">
+                      <input type="radio" autocomplete="off"> Horizontal Seams
+                  </label>
+                </div>
+                </div><div class="col-md-5 vcenter">
                 <form class="form-inline">
-                    <div class="form-group">
+                    <div class="form-group small-control">
                         <div class="input-group">
                             <div class="input-group-addon">
                                 <span class="glyphicon glyphicon-resize-vertical" aria-hidden="true"></span>
                             </div>
-                            <input type="text" class="form-control" id="vertical-size" placeholder="Vertical Size (Px)">
+                            <input type="text" class="form-control" id="vertical-size" placeholder="Pixels">
                         </div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group small-control">
                         <div class="input-group">
                             <div class="input-group-addon">
                                 <span class="glyphicon glyphicon-resize-horizontal" aria-hidden="true"></span>
                             </div>
-                            <input type="text" class="form-control" id="horizontal-size" placeholder="Horizontal Size (Px)">
+                            <input type="text" class="form-control" id="horizontal-size" placeholder="Pixels">
                         </div>
                     </div>
                     <button type="submit" id="resize" class="btn btn-primary">Resize</button>

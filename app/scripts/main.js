@@ -56,4 +56,15 @@ $(document).ready(function() {
 		}
 	});
 
+	$('.seam-btns').on('click', function(e){
+		var id = e.target.id;
+		if(id == 'no-seams-btn'){
+			carver.hideSeams();
+		} else if(id == 'vertical-seams-btn'){
+			carver.displayVerticalSeams();
+		} else if(id == 'horizontal-seams-btn'){
+			carver.displayHorizontalSeams();
+		}
+	});
+
 });

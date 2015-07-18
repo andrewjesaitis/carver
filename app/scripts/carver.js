@@ -2,8 +2,9 @@ export default class Carver {
     constructor() {
         this.canvas = $('#canvas')[0];
         this.ctx = this.canvas.getContext('2d');
-        this.dualGradiantCanvas = $('#gradiant-canvas-dual')[0];
-        this.dualGradiantCtx = this.dualGradiantCanvas.getContext('2d');
+        this.gradCanvas = $('#gradiant-canvas-dual')[0];
+        this.gradCtx = this.gradCanvas.getContext('2d');
+        this.seamsDisplayed = 'none';
     }
 
     setImage(imgUrl) {
@@ -22,11 +23,27 @@ export default class Carver {
         this.drawImagesForDisplay();
     }
 
+    doResize(orientation) {
+        this.ctx.putImageData(this.colorData, 0, 0);
+        this.convertGrayscale();
+        this.computeGradiant(false);
+        this.computeEnergy(orientation);
+        var seam = this.computeSeams(1, orientation)[0];
+        var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.ripSeam(seam, orientation, imageData);
+        if (orientation === 'vertical') {
+            this.canvas.width = this.canvas.width-1;
+            this.gradCanvas.width = this.canvas.width;
+        } else if (orientation === 'horizontal'){
+            this.canvas.height = this.canvas.height-1;
+            this.gradCanvas.height = this.canvas.height;
+        }
+        this.ctx.putImageData(imageData, 0, 0);
+    }
+
     resize(newWidth, newHeight) {
-        console.log(newWidth, newHeight);
         var rowDelta = this.canvas.height - newHeight;
         var colDelta = this.canvas.width - newWidth;
-        console.log(rowDelta, colDelta);
         if(colDelta < 0 || rowDelta < 0){
             console.log('Cannot increase image size...yet');
         }
@@ -41,47 +58,62 @@ export default class Carver {
             }
             console.log(rowDelta, colDelta);
         }
-        this.drawImagesForDisplay();    
+        this.drawImagesForDisplay();
+
+        if (this.seamsDisplayed === 'vertical') {
+            this.displayVerticalSeams();
+        } else if (this.seamsDisplayed === 'horizontal') {
+            this.displayHorizontalSeams();
+        } else if (this.seamsDisplayed === 'none') {
+            this.hideSeams();
+        }
         $('#horizontal-size').val(this.canvas.width);
         $('#vertical-size').val(this.canvas.height);
     }
 
     drawImagesForDisplay() {
+        this.colorData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         this.convertGrayscale();
-        this.computeGradiant(true);
+        this.computeGradiant();
+        this.computeSeamImageDatas();
     }
 
+    computeSeamImageDatas () {
+        this.computeEnergy('vertical');
+        var vertSeams = this.computeSeams(1, 'vertical');
+        var colorDataCopy = this.copyArrayBuffer(this.colorData);
+        var gradDataCopy = this.copyArrayBuffer(this.gradData);
+        this.vertData = this.traceSeam(vertSeams, colorDataCopy);
+        this.vertGradData = this.traceSeam(vertSeams, gradDataCopy);
 
-    drawSeams () {
-        this.computeEnergy();
-        var seam = this.computeSeams(20);
-        var grayscaleData = this.grayscaleCtx.getImageData(0, 0, this.grayscaleCanvas.width, this.grayscaleCanvas.height);
-        this.cachedGrayscaleData = copyArrayBuffer(grayscaleData);
-        var data = this.traceSeam(seam, grayscaleData);
-        this.grayscaleCtx.putImageData(grayscaleData, 0, 0);
+        this.computeEnergy('horizontal');
+        var horzSeams = this.computeSeams(1, 'horizontal');
+        colorDataCopy = this.copyArrayBuffer(this.colorData);
+        gradDataCopy = this.copyArrayBuffer(this.gradData);
+        this.horzData = this.traceSeam(horzSeams, colorDataCopy);
+        this.horzGradData = this.traceSeam(horzSeams, gradDataCopy);
+    }
+
+    copyArrayBuffer(src) {
+        return new ImageData(new Uint8ClampedArray(src.data), src.width, src.height);
+    }
+
+    displayVerticalSeams() {
+        this.seamsDisplayed = 'vertical';
+        this.ctx.putImageData(this.vertData, 0, 0);
+        this.gradCtx.putImageData(this.vertGradData, 0, 0);
+    }
+    
+    displayHorizontalSeams() {
+        this.seamsDisplayed = 'horizontal';
+        this.ctx.putImageData(this.horzData, 0, 0);
+        this.gradCtx.putImageData(this.horzGradData, 0, 0);
     }
 
     hideSeams() {
-        this.grayscaleCtx.putImageData(this.cachedGrayscaleData);
-    }
-
-    doResize(orientation) {
-        this.convertGrayscale();
-        this.computeGradiant(false);
-        this.computeEnergy(orientation);
-        var seam = this.computeSeams(1, orientation)[0];
-        var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.ripSeam(seam, orientation, imageData);
-        if (orientation === 'vertical') {
-            this.canvas.width = this.canvas.width-1;
-            this.grayscaleCanvas.width = this.canvas.width;
-            this.dualGradiantCanvas.width = this.canvas.width;
-        } else if (orientation === 'horizontal'){
-            this.canvas.height = this.canvas.height-1;
-            this.grayscaleCanvas.height = this.canvas.height;
-            this.dualGradiantCanvas.height = this.canvas.height;
-        }
-        this.ctx.putImageData(imageData, 0, 0);
+        this.seamsDisplayed = 'none';
+        this.ctx.putImageData(this.colorData, 0, 0);
+        this.gradCtx.putImageData(this.gradData, 0, 0);
     }
 
     convertGrayscale() {
@@ -98,12 +130,12 @@ export default class Carver {
         }
     }
 
-    computeGradiant(forDisplay) {
-        this.dualGradiantCanvas.width = this.grayscaleImage.cols;
-        this.dualGradiantCanvas.height = this.grayscaleImage.rows;
-        this.dualGradiantCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
-        var dualImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        var UInt32DualData = new Uint32Array(dualImageData.data.buffer);
+    computeGradiant() {
+        this.gradCanvas.width = this.canvas.width;
+        this.gradCanvas.height = this.canvas.width;
+        this.gradCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+        this.gradData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        var UInt32DualData = new Uint32Array(this.gradData.data.buffer);
         this.UInt8DualGradData = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
 
         this.gradiantImage = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.S32C2_t);
@@ -123,7 +155,7 @@ export default class Carver {
             this.UInt8DualGradData[i] = mag;
             UInt32DualData[i] = alpha | (mag << 16) | (mag << 8) | mag;
         }
-        this.dualGradiantCtx.putImageData(dualImageData, 0, 0);
+        this.gradCtx.putImageData(this.gradData, 0, 0);
     }
 
     computeEnergy(orientation) {
