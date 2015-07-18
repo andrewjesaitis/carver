@@ -57,8 +57,8 @@ export default class Carver {
         this.computeGradiant(true);
     }
 
+
     drawSeams () {
-        this.drawImagesForDisplay();
         this.computeEnergy();
         var seam = this.computeSeams(20);
         var grayscaleData = this.grayscaleCtx.getImageData(0, 0, this.grayscaleCanvas.width, this.grayscaleCanvas.height);
@@ -97,10 +97,10 @@ export default class Carver {
     }
 
     convertGrayscale() {
-        this.grayscaleCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
-        var imageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
-        this.grayscaleImage = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
-        jsfeat.imgproc.grayscale(imageData.data, this.image.width, this.image.height, this.grayscaleImage);
+        this.grayscaleCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+        var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.grayscaleImage = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
+        jsfeat.imgproc.grayscale(imageData.data, this.canvas.width, this.canvas.height, this.grayscaleImage);
 
         var data_u32 = new Uint32Array(imageData.data.buffer);
         var alpha = (0xff << 24);
@@ -118,29 +118,29 @@ export default class Carver {
         if (forDisplay) {
             this.xGradiantCanvas.width = this.grayscaleImage.cols;
             this.xGradiantCanvas.height = this.grayscaleImage.rows;
-            this.xGradiantCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
-            var xImageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
+            this.xGradiantCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+            var xImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
             var UInt32XData = new Uint32Array(xImageData.data.buffer);
-            this.UInt8XGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
+            this.UInt8XGradData = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
         
         
             this.yGradiantCanvas.width = this.grayscaleImage.cols;
             this.yGradiantCanvas.height = this.grayscaleImage.rows;
-            this.yGradiantCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
-            var yImageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
+            this.yGradiantCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+            var yImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
             var UInt32YData = new Uint32Array(yImageData.data.buffer);
-            this.UInt8YGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
+            this.UInt8YGradData = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
         }
         
 
         this.dualGradiantCanvas.width = this.grayscaleImage.cols;
         this.dualGradiantCanvas.height = this.grayscaleImage.rows;
-        this.dualGradiantCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
-        var dualImageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
+        this.dualGradiantCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+        var dualImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         var UInt32DualData = new Uint32Array(dualImageData.data.buffer);
-        this.UInt8DualGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
+        this.UInt8DualGradData = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
 
-        this.gradiantImage = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.S32C2_t);
+        this.gradiantImage = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.S32C2_t);
         jsfeat.imgproc.sobel_derivatives(this.grayscaleImage, this.gradiantImage);
 
         var alpha = (0xff << 24);
