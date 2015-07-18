@@ -60,6 +60,4 @@ $(document).ready(function() {
 		}
 	});
 
-	$('#tower-link').click();
-
 });

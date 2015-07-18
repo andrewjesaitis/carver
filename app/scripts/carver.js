@@ -27,17 +27,23 @@ export default class Carver {
 
     resize(newWidth, newHeight) {
         console.log(newWidth, newHeight);
-        if(newHeight !== this.canvas.height){
-            console.log("Height adjustment not implemented...yet");
-        }
+        var rowDelta = this.canvas.height - newHeight;
         var colDelta = this.canvas.width - newWidth;
-        if(colDelta > 0){
-            console.log("Cannot increase image size...yet");
+        console.log(rowDelta, colDelta);
+        if(colDelta < 0 || rowDelta < 0){
+            console.log('Cannot increase image size...yet');
         }
-        for(var i =0; i < colDelta; i++){
-            this.resizeHorz();
-            console.log(i/colDelta + "%")
-        }
+        while(rowDelta > 0 || colDelta > 0) {
+            if (colDelta > 0) {
+                this.doResize('vertical');
+                --colDelta;    
+            }
+            if (rowDelta > 0) {
+                this.doResize('horizontal');
+                --rowDelta;
+            }
+            console.log(rowDelta, colDelta);
+        }    
         $('#horizontal-size').val(this.canvas.width);
         $('#vertical-size').val(this.canvas.height);
     }
@@ -57,14 +63,18 @@ export default class Carver {
         this.grayscaleCtx.putImageData(this.cachedGrayscaleData);
     }
 
-    resizeHorz() {
+    doResize(orientation) {
         this.convertGrayscale();
         this.computeGradiant();
-        this.computeEnergy();
-        var seam = this.computeSeams(1)[0];
+        this.computeEnergy(orientation);
+        var seam = this.computeSeams(1, orientation)[0];
         var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.ripSeam(seam, imageData);
-        this.canvas.width = this.canvas.width-1;
+        this.ripSeam(seam, orientation, imageData);
+        if (orientation === 'vertical') {
+            this.canvas.width = this.canvas.width-1;
+        } else if (orientation === 'horizontal'){
+            this.canvas.height = this.canvas.height-1;
+        }
         this.ctx.putImageData(imageData, 0, 0);
     }
 
@@ -126,24 +136,24 @@ export default class Carver {
         this.yGradiantCtx.putImageData(yImageData, 0, 0);
     }
 
-    computeEnergy() {
+    computeEnergy(orientation) {
         // we compute the seams using dynamic programing
 
         this.costMatrix = [];
-        this.parentMatrix = [];
+        this.neighborMatrix = [];
 
         for (var i = 0; i < this.canvas.width; ++i) {
             this.costMatrix[i] = [];
-            this.parentMatrix[i] = [];
+            this.neighborMatrix[i] = [];
             for (var j = 0; j < this.canvas.height; ++j) {
                 this.costMatrix[i][j] = 255;
-                this.parentMatrix[i][j] = null;
+                this.neighborMatrix[i][j] = null;
             }
         }
 
         for (var i = 0; i < this.canvas.width; i++) {
             for(var j = 0; j < this.canvas.height; j++) {
-                this.costMatrix[i][j] = this.cost(i,j,'vertical');
+                this.costMatrix[i][j] = this.cost(i,j, orientation);
             }
         }
 
@@ -157,20 +167,15 @@ export default class Carver {
         }
         var cost = gradiantMatrix[this.at(x,y)];
         
-        if(y === 0){
+        if ((y === 0 && orientation === 'vertical') || (x ===0 && orientation === 'horizontal' )) {
             return cost;
         }
-        var parents = this.getParents(x, y, gradiantMatrix);
-        var minParentCost = parents[0].cost;
-        this.parentMatrix[x][y] = parents[0];
-        for(var i = 0; i < parents.length; i++) {
-            var parentCost = parents[i].cost;
-            if(parentCost<minParentCost){
-                minParentCost = parentCost;
-                this.parentMatrix[x][y] = parents[i];
-            }
-        }
-        cost = cost + minParentCost;
+        var neighbors = this.getNeighbors(x, y, gradiantMatrix, orientation);
+        var minNeighbor = _.min(neighbors, function(pixel){
+            return pixel.cost;
+        });
+        this.neighborMatrix[x][y] = minNeighbor;
+        cost = cost + minNeighbor.cost;
         return cost;
 
     }
@@ -179,88 +184,112 @@ export default class Carver {
         return (y * this.canvas.width + x);
     }
 
-    getParents(x, y, gradiantMatrix) {
-        var parents = [];
-        if(y === 0){
-            return parents;
-        } else if(x === 0) {
-            parents.push({
-                'x': x,
-                'y': y-1,
-                'cost': gradiantMatrix[this.at(x,y-1)]
-            });
-            parents.push({
-                'x': x+1,
-                'y': y-1,
-                'cost': gradiantMatrix[this.at(x+1,y-1)]
-            });
-        } else if(x === this.canvas.width-1) {
-            parents.push({
-                'x' :x-1,
-                'y' :y-1,
-                'cost' :gradiantMatrix[this.at(x-1,y-1)]
-            });
-            parents.push({
-                'x' :x,
-                'y' :y-1,
-                'cost' :gradiantMatrix[this.at(x,y-1)]
-            });
-        } else {
-            parents.push({
-                'x': x-1,
-                'y': y-1,
-                'cost': gradiantMatrix[this.at(x-1,y-1)]
-            });
-            parents.push({
-                'x': x,
-                'y': y-1,
-                'cost': gradiantMatrix[this.at(x,y-1)]
-            });
-            parents.push({
-                'x': x+1,
-                'y': y-1,
-                'cost': gradiantMatrix[this.at(x+1,y-1)]
-            });
-        }
-        return parents;
+    getNeighbor(x,y,gradiantMatrix) {
+        return {
+            'x': x,
+            'y': y,
+            'cost': gradiantMatrix[this.at(x,y)]
+        };
     }
 
-    computeSeams(numSeams) {
-        //scan last row of costs for minimum
-        //TODO: Just sort the last row, and slice it?
+    getNeighbors(x, y, gradiantMatrix, orientation) {
+        var neighbors = [];
+        if(orientation === 'vertical'){
+                if(y === 0){
+                    return neighbors;
+                } else if(x === 0) {
+                    neighbors.push(this.getNeighbor(x, y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x+1, y-1, gradiantMatrix));
+                } else if(x === this.canvas.width-1) {
+                    neighbors.push(this.getNeighbor(x-1,y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x,y-1, gradiantMatrix));
+                } else {
+                    neighbors.push(this.getNeighbor(x-1,y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x,y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x+1,y-1, gradiantMatrix));
+                }
+            } else if (orientation === 'horizontal'){
+                if(x === 0){
+                    return neighbors;
+                } else if(y === 0) {
+                    neighbors.push(this.getNeighbor(x-1, y, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1, y+1, gradiantMatrix));
+                } else if(y === this.canvas.height-1) {
+                    neighbors.push(this.getNeighbor(x-1, y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1, y, gradiantMatrix));
+                } else {
+                    neighbors.push(this.getNeighbor(x-1,y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1, y, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1, y+1, gradiantMatrix));
+                }
+            }
+        return neighbors;
+    }
+
+    computeSeams(numSeams, orientation) {
+        var minCosts;
+        if (orientation === 'vertical') {
+            minCosts = this.getBottomEdgeMin(numSeams);
+        } else if (orientation === 'horizontal') {
+            minCosts = this.getRightEdgeMin(numSeams);
+        }
+        // take those positions and follow the min cost route back to the top
+        var seams = [];
+        for(var i = 0; i < minCosts.length; i++){
+            var x =  minCosts[i].x;
+            var y = minCosts[i].y;
+            var pos = orientation === 'vertical' ? y : x;
+            var seam = [];
+            while(pos > 0) {
+                seam.push({'x': x, 'y': y});
+                var neighbor = this.neighborMatrix[x][y];
+                x = neighbor.x;
+                y = neighbor.y;
+                --pos;
+            }
+            seam.push({'x': x, 'y': y});
+            seams.push(seam);
+        }
+
+        return seams;
+    }
+
+    getBottomEdgeMin(numSeams){
         var lastRowIdx = this.canvas.height - 1;
-        var minCosts = [{'pos': 0, 'cost': this.costMatrix[0][lastRowIdx]}];
+        var minCosts = [{'x': 0, 'y': lastRowIdx, 'cost': this.costMatrix[0][lastRowIdx]}];
         for (var i = 0; i < this.costMatrix.length; i++) {
             var curCost = this.costMatrix[i][lastRowIdx];
             if(Object.keys(minCosts).length <= numSeams){
-                minCosts.push({'pos' : i, 'cost': curCost});
+                minCosts.push({'x' : i, 'y': lastRowIdx, 'cost': curCost});
             } else {
                 var maxItem = _.max(minCosts, function(item){return item.cost;});
                 if (curCost < maxItem.cost) {
-                    minCosts.push({'pos' : i, 'cost': curCost});
+                    minCosts.push({'x' : i, 'y': lastRowIdx, 'cost': curCost});
                     minCosts = _.filter(minCosts, function(item){ return item.cost < maxItem.cost;});
                 }
             }
         }
         minCosts = minCosts.slice(0, numSeams);
-        // take those positions and follow the min cost route back to the top
-        var seams = [];
-        for(var i = 0; i < minCosts.length; i++){
-            var x =  minCosts[i].pos;
-            var seam = [];
-            for(var y = lastRowIdx; y >= 0; y--){
-                seam.push({'x': x, 'y': y});
-                //TODO: Shitty Construction, fix it
-                if(y ===0) {
-                    break;
-                }
-                var parent = this.parentMatrix[x][y];
-                x = parent.x;
-            }
-            seams.push(seam);
-        }
+        return minCosts;
+    }
 
-        return seams;
+    getRightEdgeMin(numSeams){
+        var lastColIdx = this.canvas.width - 1;
+        var minCosts = [{'x': lastColIdx, 'y': 0, 'cost': this.costMatrix[lastColIdx][0]}];
+        for (var i = 0; i < this.costMatrix[0].length; i++) {
+            var curCost = this.costMatrix[lastColIdx][i];
+            if(Object.keys(minCosts).length <= numSeams){
+                minCosts.push({'x' : lastColIdx, 'y': i, 'cost': curCost});
+            } else {
+                var maxItem = _.max(minCosts, function(item){return item.cost;});
+                if (curCost < maxItem.cost) {
+                    minCosts.push({'x' : lastColIdx, 'y': i, 'cost': curCost});
+                    minCosts = _.filter(minCosts, function(item){ return item.cost < maxItem.cost;});
+                }
+            }
+        }
+        minCosts = minCosts.slice(0, numSeams);
+        return minCosts;    
     }
 
     traceSeam(seams, imageData) {
@@ -274,21 +303,34 @@ export default class Carver {
         return imageData;
     }
 
-    ripSeam(seam, imageData) {
+    // TODO: Refactor out duplication
+    ripSeam(seam, orientation, imageData) {
         var uInt32Data = new Uint32Array(imageData.data.buffer);
-        var target = new Uint32Array((this.canvas.width-1)*(this.canvas.height))
-        for (var y = 0; y < this.canvas.height; y++) {
-            var pixel = _.find(seam, function (pix) { return pix.y === y});
-            for (var x = 0; x < this.canvas.width; x++){
-                if(x < pixel.x) {
-                    uInt32Data[this.at(x,y)] = uInt32Data[this.at(x,y)];
-                } else {
-                    uInt32Data[this.at(x,y)] = uInt32Data[this.at(x+1,y)];
+        var target;
+        if (orientation === 'vertical') {
+            target = new Uint32Array((this.canvas.width-1)*(this.canvas.height))
+            for (var y = 0; y < this.canvas.height; y++) {
+                var pixel = _.find(seam, function (pix) { return pix.y === y});
+                for (var x = 0; x < this.canvas.width; x++){
+                    if(x < pixel.x) {
+                        uInt32Data[this.at(x,y)] = uInt32Data[this.at(x,y)];
+                    } else {
+                        uInt32Data[this.at(x,y)] = uInt32Data[this.at(x+1,y)];
+                    }
                 }
-                
+            }
+        } else if (orientation === 'horizontal') {
+            target = new Uint32Array((this.canvas.width)*(this.canvas.height-1));
+            for (var x = 0; x < this.canvas.width; x++) {
+                var pixel = _.find(seam, function (pix) { return pix.x === x});
+                for (var y = 0; y < this.canvas.height; y++){
+                    if(y < pixel.y) {
+                        uInt32Data[this.at(x,y)] = uInt32Data[this.at(x,y)];
+                    } else {
+                        uInt32Data[this.at(x,y)] = uInt32Data[this.at(x,y+1)];
+                    }   
+                }       
             }
         }
     }
-
-
 }
