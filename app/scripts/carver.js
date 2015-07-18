@@ -25,8 +25,7 @@ export default class Carver {
         this.ctx.drawImage(this.image, 0, 0);
         $('#horizontal-size').val(this.canvas.width);
         $('#vertical-size').val(this.canvas.height);
-        this.convertGrayscale();
-        this.computeGradiant();
+        this.drawImagesForDisplay();
     }
 
     resize(newWidth, newHeight) {
@@ -47,14 +46,19 @@ export default class Carver {
                 --rowDelta;
             }
             console.log(rowDelta, colDelta);
-        }    
+        }
+        this.drawImagesForDisplay();    
         $('#horizontal-size').val(this.canvas.width);
         $('#vertical-size').val(this.canvas.height);
     }
 
-    drawSeams () {
+    drawImagesForDisplay() {
         this.convertGrayscale();
-        this.computeGradiant();
+        this.computeGradiant(true);
+    }
+
+    drawSeams () {
+        this.drawImagesForDisplay();
         this.computeEnergy();
         var seam = this.computeSeams(20);
         var grayscaleData = this.grayscaleCtx.getImageData(0, 0, this.grayscaleCanvas.width, this.grayscaleCanvas.height);
@@ -69,21 +73,19 @@ export default class Carver {
 
     doResize(orientation) {
         this.convertGrayscale();
-        this.computeGradiant();
+        this.computeGradiant(false);
         this.computeEnergy(orientation);
         var seam = this.computeSeams(1, orientation)[0];
         var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         this.ripSeam(seam, orientation, imageData);
         if (orientation === 'vertical') {
             this.canvas.width = this.canvas.width-1;
-            this.grayscaleCanvas.width = this.grayscaleCanvas.width-1;
-            this.xGradiantCanvas.width = this.xGradiantCanvas.width-1;
-            this.yGradiantCanvas.width = this.yGradiantCanvas.width-1;
+            this.grayscaleCanvas.width = this.canvas.width;
+            this.dualGradiantCanvas.width = this.canvas.width;
         } else if (orientation === 'horizontal'){
             this.canvas.height = this.canvas.height-1;
-            this.grayscaleCanvas.height = this.grayscaleCanvas.height-1;
-            this.xGradiantCanvas.height = this.xGradiantCanvas.height-1;
-            this.yGradiantCanvas.height = this.yGradiantCanvas.height-1;
+            this.grayscaleCanvas.height = this.canvas.height;
+            this.dualGradiantCanvas.height = this.canvas.height;
         }
         this.ctx.putImageData(imageData, 0, 0);
     }
@@ -112,32 +114,35 @@ export default class Carver {
         this.grayscaleCtx.putImageData(imageData, 0, 0);
     }
 
-    computeGradiant() {
-        this.xGradiantCanvas.width = this.grayscaleImage.cols;
-        this.xGradiantCanvas.height = this.grayscaleImage.rows;
-        this.xGradiantCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
-
-        this.yGradiantCanvas.width = this.grayscaleImage.cols;
-        this.yGradiantCanvas.height = this.grayscaleImage.rows;
-        this.yGradiantCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
+    computeGradiant(forDisplay) {
+        if (forDisplay) {
+            this.xGradiantCanvas.width = this.grayscaleImage.cols;
+            this.xGradiantCanvas.height = this.grayscaleImage.rows;
+            this.xGradiantCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
+            var xImageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
+            var UInt32XData = new Uint32Array(xImageData.data.buffer);
+            this.UInt8XGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
+        
+        
+            this.yGradiantCanvas.width = this.grayscaleImage.cols;
+            this.yGradiantCanvas.height = this.grayscaleImage.rows;
+            this.yGradiantCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
+            var yImageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
+            var UInt32YData = new Uint32Array(yImageData.data.buffer);
+            this.UInt8YGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
+        }
+        
 
         this.dualGradiantCanvas.width = this.grayscaleImage.cols;
         this.dualGradiantCanvas.height = this.grayscaleImage.rows;
         this.dualGradiantCtx.drawImage(this.image, 0, 0, this.image.width, this.image.height);
-
-        var xImageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
-        var yImageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
         var dualImageData = this.ctx.getImageData(0, 0, this.image.width, this.image.height);
+        var UInt32DualData = new Uint32Array(dualImageData.data.buffer);
+        this.UInt8DualGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
 
         this.gradiantImage = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.S32C2_t);
         jsfeat.imgproc.sobel_derivatives(this.grayscaleImage, this.gradiantImage);
 
-        var UInt32XData = new Uint32Array(xImageData.data.buffer);
-        var UInt32YData = new Uint32Array(yImageData.data.buffer);
-        var UInt32DualData = new Uint32Array(dualImageData.data.buffer);
-        this.UInt8XGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
-        this.UInt8YGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
-        this.UInt8DualGradData = new jsfeat.matrix_t(this.image.width, this.image.height, jsfeat.U8_t | jsfeat.C1_t);
         var alpha = (0xff << 24);
         var i = this.gradiantImage.cols * this.gradiantImage.rows; 
         var gx = 0;
@@ -146,19 +151,22 @@ export default class Carver {
         while(--i >= 0) {
             // Bit shifting is multiplying by 2 (<<1) and mod'ing by 255 (&0xff)
             gx = Math.abs(this.gradiantImage.data[i << 1])//&0xff; 
-            this.UInt8XGradData[i] = gy;
-            UInt32XData[i] = alpha | (gy << 16) | (gy << 8) | gy;
             gy = Math.abs(this.gradiantImage.data[(i << 1) + 1])//&0xff;
-            this.UInt8YGradData[i] = gx;
-            UInt32YData[i] = alpha | (gx << 16) | (gx << 8) | gx;
-            // mag = ((gx+gy)>>1)&0xff;
             mag = Math.sqrt(Math.pow(gx, 2) + Math.pow(gy, 2))&0xff;
             // mag = mag / 360; // normalize mag into 0-255
             this.UInt8DualGradData[i] = mag;
             UInt32DualData[i] = alpha | (mag << 16) | (mag << 8) | mag;
+            if(forDisplay){
+                this.UInt8XGradData[i] = gy;
+                UInt32XData[i] = alpha | (gy << 16) | (gy << 8) | gy;
+                this.UInt8YGradData[i] = gx;
+                UInt32YData[i] = alpha | (gx << 16) | (gx << 8) | gx;
+            }
         }
-        this.xGradiantCtx.putImageData(xImageData, 0, 0);
-        this.yGradiantCtx.putImageData(yImageData, 0, 0);
+        if (forDisplay) {
+            this.xGradiantCtx.putImageData(xImageData, 0, 0);
+            this.yGradiantCtx.putImageData(yImageData, 0, 0);
+        }
         this.dualGradiantCtx.putImageData(dualImageData, 0, 0);
     }
 
