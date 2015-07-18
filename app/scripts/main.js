@@ -57,6 +57,8 @@ $(document).ready(function() {
 			$('#gradiant-canvas-x').show();
 		} else if(id == 'gradiant-btn-y'){
 			$('#gradiant-canvas-y').show();
+		} else if(id == 'gradiant-btn-dual'){
+			$('#gradiant-canvas-dual').show();
 		}
 	});
 
