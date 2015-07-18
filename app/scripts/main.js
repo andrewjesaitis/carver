@@ -51,12 +51,6 @@ $(document).ready(function() {
 ;		var id = e.target.id;
 		if(id == 'original-btn'){
 			$('#canvas').show();
-		} else if(id == 'grayscale-btn'){
-			$('#grayscale-canvas').show();
-		} else if(id == 'gradiant-btn-x'){
-			$('#gradiant-canvas-x').show();
-		} else if(id == 'gradiant-btn-y'){
-			$('#gradiant-canvas-y').show();
 		} else if(id == 'gradiant-btn-dual'){
 			$('#gradiant-canvas-dual').show();
 		}

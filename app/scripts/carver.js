@@ -2,12 +2,6 @@ export default class Carver {
     constructor() {
         this.canvas = $('#canvas')[0];
         this.ctx = this.canvas.getContext('2d');
-        this.grayscaleCanvas = $('#grayscale-canvas')[0];
-        this.grayscaleCtx = this.grayscaleCanvas.getContext('2d');
-        this.xGradiantCanvas = $('#gradiant-canvas-x')[0];
-        this.xGradiantCtx = this.xGradiantCanvas.getContext('2d');
-        this.yGradiantCanvas = $('#gradiant-canvas-y')[0];
-        this.yGradiantCtx = this.yGradiantCanvas.getContext('2d');
         this.dualGradiantCanvas = $('#gradiant-canvas-dual')[0];
         this.dualGradiantCtx = this.dualGradiantCanvas.getContext('2d');
     }
@@ -90,14 +84,7 @@ export default class Carver {
         this.ctx.putImageData(imageData, 0, 0);
     }
 
-    copyArrayBuffer(src) {
-        var target = new ArrayBuffer(src.length);
-        new Uint32Array(target).set(new Uint32Array(src));
-        return target;
-    }
-
     convertGrayscale() {
-        this.grayscaleCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
         var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         this.grayscaleImage = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
         jsfeat.imgproc.grayscale(imageData.data, this.canvas.width, this.canvas.height, this.grayscaleImage);
@@ -109,30 +96,9 @@ export default class Carver {
             pix = this.grayscaleImage.data[i];
             data_u32[i] = alpha | (pix << 16) | (pix << 8) | pix;
         }
-        this.grayscaleCanvas.width = this.grayscaleImage.cols;
-        this.grayscaleCanvas.height = this.grayscaleImage.rows;
-        this.grayscaleCtx.putImageData(imageData, 0, 0);
     }
 
     computeGradiant(forDisplay) {
-        if (forDisplay) {
-            this.xGradiantCanvas.width = this.grayscaleImage.cols;
-            this.xGradiantCanvas.height = this.grayscaleImage.rows;
-            this.xGradiantCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
-            var xImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-            var UInt32XData = new Uint32Array(xImageData.data.buffer);
-            this.UInt8XGradData = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
-        
-        
-            this.yGradiantCanvas.width = this.grayscaleImage.cols;
-            this.yGradiantCanvas.height = this.grayscaleImage.rows;
-            this.yGradiantCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
-            var yImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-            var UInt32YData = new Uint32Array(yImageData.data.buffer);
-            this.UInt8YGradData = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
-        }
-        
-
         this.dualGradiantCanvas.width = this.grayscaleImage.cols;
         this.dualGradiantCanvas.height = this.grayscaleImage.rows;
         this.dualGradiantCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
@@ -156,23 +122,12 @@ export default class Carver {
             // mag = mag / 360; // normalize mag into 0-255
             this.UInt8DualGradData[i] = mag;
             UInt32DualData[i] = alpha | (mag << 16) | (mag << 8) | mag;
-            if(forDisplay){
-                this.UInt8XGradData[i] = gy;
-                UInt32XData[i] = alpha | (gy << 16) | (gy << 8) | gy;
-                this.UInt8YGradData[i] = gx;
-                UInt32YData[i] = alpha | (gx << 16) | (gx << 8) | gx;
-            }
-        }
-        if (forDisplay) {
-            this.xGradiantCtx.putImageData(xImageData, 0, 0);
-            this.yGradiantCtx.putImageData(yImageData, 0, 0);
         }
         this.dualGradiantCtx.putImageData(dualImageData, 0, 0);
     }
 
     computeEnergy(orientation) {
         // we compute the seams using dynamic programing
-
         this.costMatrix = [];
         this.neighborMatrix = [];
 
@@ -195,11 +150,6 @@ export default class Carver {
 
     cost(x, y, orientation) {
         var gradiantMatrix = this.UInt8DualGradData;
-        // if(orientation === 'vertical'){
-        //     gradiantMatrix = this.UInt8YGradData;
-        // } else if (orientation === 'horizontal') {
-        //     gradiantMatrix = this.UInt8XGradData;
-        // }
         var cost = gradiantMatrix[this.at(x,y)];
         
         if ((y === 0 && orientation === 'vertical') || (x ===0 && orientation === 'horizontal' )) {
