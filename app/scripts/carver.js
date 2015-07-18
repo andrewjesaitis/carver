@@ -197,10 +197,11 @@ export default class Carver {
         if ((y === 0 && orientation === 'vertical') || (x ===0 && orientation === 'horizontal' )) {
             return cost;
         }
-        var neighbors = this.getNeighbors(x, y, gradiantMatrix, orientation);
-        var minNeighbor = _.min(neighbors, function(pixel){
-            return pixel.cost;
-        });
+        // var neighbors = this.getNeighbors(x, y, gradiantMatrix, orientation);
+        // var minNeighbor = _.min(neighbors, function(pixel){
+        //     return pixel.cost;
+        // });
+        var minNeighbor = this.getMinNeighbor(x, y, gradiantMatrix, orientation);
         this.neighborMatrix[x][y] = minNeighbor;
         cost = cost + minNeighbor.cost;
         return cost;
@@ -253,7 +254,50 @@ export default class Carver {
         return neighbors;
     }
 
-    
+    getMinNeighbor(x, y, gradiantMatrix, orientation) {
+        var neighbor1, neighbor2, neighbor3;
+        var neighbor = null;
+        if(orientation === 'vertical'){
+                if(y === 0){
+                    return neighbors;
+                } else if(x === 0) {
+                    neighbor1 = this.getNeighbor(x, y-1, gradiantMatrix)
+                    neighbor2 = this.getNeighbor(x+1, y-1, gradiantMatrix)
+                    neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
+                } else if(x === this.canvas.width-1) {
+                    neighbor1 = this.getNeighbor(x-1,y-1, gradiantMatrix);
+                    neighbor2 = this.getNeighbor(x,y-1, gradiantMatrix);
+                    neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
+                } else {
+                    neighbor1 = this.getNeighbor(x-1,y-1, gradiantMatrix);
+                    neighbor2 = this.getNeighbor(x,y-1, gradiantMatrix);
+                    neighbor3 = this.getNeighbor(x+1,y-1, gradiantMatrix);
+                    neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
+                    neighbor = neighbor.cost < neighbor3.cost ? neighbor : neighbor3;
+                }
+            } else if (orientation === 'horizontal'){
+                if(x === 0){
+                    return neighbors;
+                } else if(y === 0) {
+                    neighbor1 = this.getNeighbor(x-1, y, gradiantMatrix);
+                    neighbor2 = this.getNeighbor(x-1, y+1, gradiantMatrix);
+                    neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
+                } else if(y === this.canvas.height-1) {
+                    neighbor1 = this.getNeighbor(x-1, y-1, gradiantMatrix);
+                    neighbor2 = this.getNeighbor(x-1, y, gradiantMatrix);
+                    neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
+                } else {
+                    neighbor1 = this.getNeighbor(x-1,y-1, gradiantMatrix);
+                    neighbor2 = this.getNeighbor(x-1, y, gradiantMatrix);
+                    neighbor3 = this.getNeighbor(x-1, y+1, gradiantMatrix);
+                    neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
+                    neighbor = neighbor.cost < neighbor3.cost ? neighbor : neighbor3;
+                }
+            }
+        return neighbor;
+    }
+
+
 
     computeSeams(numSeams, orientation) {
         var minCosts;
