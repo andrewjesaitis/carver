@@ -33,12 +33,12 @@
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Load Image<span class="caret"></span></a>
                     <ul class="dropdown-menu">
-                        <li><a id="tower-link" href="#">Tower</a></li>
-                        <li><a id="ballon-link" href="#">Ballon</a></li>
+                        <li><a class="tower-link" href="#">Tower</a></li>
+                        <li><a class="ballon-link" href="#">Ballon</a></li>
                         <li role="separator" class="divider"></li>
                         <li>
                             <input id="upload" type="file" />
-                            <a href="#" id="upload-link">Your Image</a>
+                            <a href="#" class="upload-link">Your Image</a>
                         </li>
                     </ul>
                 </li>
@@ -47,7 +47,7 @@
             <h3 class="text-muted">carver</h3>
         </div>
         <div class="controls row">
-            <div class="control-margin col-md-3 image-btns btn-group" data-toggle="buttons">
+            <div class="control-margin col-xs-12 col-md-3 image-btns btn-group" data-toggle="buttons">
                 <label id="original-btn" class="btn btn-primary active">
                     <input type="radio" autocomplete="off" checked> Original
                 </label>
@@ -55,7 +55,7 @@
                     <input type="radio" autocomplete="off"> Gradiant
                 </label>
             </div>
-            <div class="control-margin col-md-5 seam-btns btn-group" data-toggle="buttons">
+            <div class="control-margin col-xs-12 col-md-5 seam-btns btn-group" data-toggle="buttons">
                 <label id="no-seams-btn" class="btn btn-primary active">
                     <input type="radio" autocomplete="off" checked> None
                 </label>
@@ -66,7 +66,7 @@
                     <input type="radio" autocomplete="off"> Horizontal Seams
                 </label>
             </div>
-            <div class="control-margin col-md-2 derivative-btns btn-group" data-toggle="buttons">
+            <div class="control-margin col-xs-12 col-md-2 derivative-btns btn-group" data-toggle="buttons">
                 <label id="simple-derivative-btn" class="btn btn-primary active">
                     <input type="radio" autocomplete="off" checked> Simple
                 </label>
@@ -74,7 +74,7 @@
                     <input type="radio" autocomplete="off"> Sobel
                 </label>
             </div>
-            <div class="control-margin col-md-5">
+            <div class="control-margin col-xs-12 col-md-8">
                 <form class="form-inline">
                     <div class="form-group small-control">
                         <div class="input-group">
@@ -100,7 +100,8 @@
             <div class="intro jumbotron">
                 <h1>Load an image to get started</h1>
                 <p>Seam carving is a technique to resize images without distorting content</p>
-                <p><a class="btn btn-primary btn-lg" href="#" class="dropdown-toggle" data-target="#load-image-modal" data-toggle="modal" role="button">Load Image<a></p>
+                <p><a class="btn btn-primary btn-lg" href="#" class="dropdown-toggle" data-target="#load-image-modal" data-toggle="modal" role="button">Load Image</a></p>
+                <small>This demo is still in development. Seam insertion and forward energy calculation are not yet implemented.</small>
                 <div class="modal fade" id="load-image-modal">
                   <div class="modal-dialog">
                     <div class="modal-content">
@@ -110,13 +111,10 @@
                       </div>
                       <div class="modal-body">
                         <ul class="list-unstyled">
-                        <li><a id="tower-link"  href="#">Tower</a></li>
-                    <li><a id="ballon-link" href="#">Ballon</a></li>
+                        <li><a class="tower-link"  href="#">Tower</a></li>
+                    <li><a class="ballon-link" href="#">Ballon</a></li>
                     <li role="separator" class="divider"></li>
-                    <li>
-                        <input id="upload" type="file" />
-                        <a href="#" id="upload-link">Your Image</a>
-                    </li>
+                    <li><a href="#" class="upload-link">Your Image</a></li>
                     </ul>
             </div>
         </div>

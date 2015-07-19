@@ -61,6 +61,7 @@ export default class Carver {
             console.log(rowDelta, colDelta);
         }
         this.drawImagesForDisplay();
+        $('#resize').removeAttr('disabled').html("Resize");
         $('#horizontal-size').val(this.canvas.width);
         $('#vertical-size').val(this.canvas.height);
     }
