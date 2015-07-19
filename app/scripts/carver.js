@@ -31,8 +31,8 @@ export default class Carver {
         this.computeGradiant(false);
         this.computeEnergy(orientation);
         var seam = this.computeSeams(1, orientation)[0];
-        var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.ripSeam(seam, orientation, imageData);
+        this.colorData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.ripSeam(seam, orientation, this.colorData);
         if (orientation === 'vertical') {
             this.canvas.width = this.canvas.width-1;
             this.gradCanvas.width = this.canvas.width;
@@ -40,7 +40,7 @@ export default class Carver {
             this.canvas.height = this.canvas.height-1;
             this.gradCanvas.height = this.canvas.height;
         }
-        this.ctx.putImageData(imageData, 0, 0);
+        this.ctx.putImageData(this.colorData, 0, 0);
     }
 
     resize(newWidth, newHeight) {
