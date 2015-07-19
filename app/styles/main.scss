@@ -83,7 +83,7 @@ body {
 
   /* Space out the masthead */
   .header {
-    margin-bottom: 30px;
+    margin-bottom: 10px;
   }
 
   /* Remove the bottom border on the jumbotron for visual effect */
@@ -111,5 +111,9 @@ body {
 
   .small-control {
     width: 40% !important;
+  }
+
+  .control-margin {
+    margin-top: 10px;
   }
 }

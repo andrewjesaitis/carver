@@ -67,4 +67,13 @@ $(document).ready(function() {
 		}
 	});
 
+	$('.derivative-btns').on('click', function(e){
+		var id = e.target.id;
+		if(id == 'simple-derivative-btn'){
+			carver.selectSimple();
+		} else if(id == 'sobel-derivative-btn'){
+			carver.selectSobel();
+		}
+	});
+
 });

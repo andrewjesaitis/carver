@@ -1,5 +1,6 @@
 export default class Carver {
     constructor() {
+        this.computeGradiant = this.computeSimpleGradiant;
         this.canvas = $('#canvas')[0];
         this.ctx = this.canvas.getContext('2d');
         this.gradCanvas = $('#gradiant-canvas-dual')[0];
@@ -20,6 +21,7 @@ export default class Carver {
         this.ctx.drawImage(this.image, 0, 0);
         $('#horizontal-size').val(this.canvas.width);
         $('#vertical-size').val(this.canvas.height);
+        this.colorData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         this.drawImagesForDisplay();
     }
 
@@ -59,7 +61,16 @@ export default class Carver {
             console.log(rowDelta, colDelta);
         }
         this.drawImagesForDisplay();
+        $('#horizontal-size').val(this.canvas.width);
+        $('#vertical-size').val(this.canvas.height);
+    }
 
+    drawImagesForDisplay() {
+        this.ctx.putImageData(this.colorData, 0, 0);
+        this.colorData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.convertGrayscale();
+        this.computeGradiant();
+        this.computeSeamImageDatas();
         if (this.seamsDisplayed === 'vertical') {
             this.displayVerticalSeams();
         } else if (this.seamsDisplayed === 'horizontal') {
@@ -67,15 +78,6 @@ export default class Carver {
         } else if (this.seamsDisplayed === 'none') {
             this.hideSeams();
         }
-        $('#horizontal-size').val(this.canvas.width);
-        $('#vertical-size').val(this.canvas.height);
-    }
-
-    drawImagesForDisplay() {
-        this.colorData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        this.convertGrayscale();
-        this.computeGradiant();
-        this.computeSeamImageDatas();
     }
 
     computeSeamImageDatas () {
@@ -98,6 +100,16 @@ export default class Carver {
         return new ImageData(new Uint8ClampedArray(src.data), src.width, src.height);
     }
 
+    selectSobel() {
+        this.computeGradiant = this.computeSobelGradiant;
+        this.drawImagesForDisplay();
+    }
+
+    selectSimple() {
+        this.computeGradiant = this.computeSimpleGradiant;
+        this.drawImagesForDisplay();
+    }
+
     displayVerticalSeams() {
         this.seamsDisplayed = 'vertical';
         this.ctx.putImageData(this.vertData, 0, 0);
@@ -117,11 +129,11 @@ export default class Carver {
     }
 
     convertGrayscale() {
-        var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        this.grayImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         this.grayscaleImage = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
-        jsfeat.imgproc.grayscale(imageData.data, this.canvas.width, this.canvas.height, this.grayscaleImage);
+        jsfeat.imgproc.grayscale(this.grayImageData.data, this.canvas.width, this.canvas.height, this.grayscaleImage);
 
-        var data_u32 = new Uint32Array(imageData.data.buffer);
+        var data_u32 = new Uint32Array(this.grayImageData.data.buffer);
         var alpha = (0xff << 24);
         var i = this.grayscaleImage.cols*this.grayscaleImage.rows, pix = 0;
         while(--i >= 0) {
@@ -130,7 +142,7 @@ export default class Carver {
         }
     }
 
-    computeGradiant() {
+    computeSobelGradiant() {
         this.gradCanvas.width = this.canvas.width;
         this.gradCanvas.height = this.canvas.width;
         this.gradCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
@@ -155,6 +167,37 @@ export default class Carver {
             this.UInt8DualGradData[i] = mag;
             UInt32DualData[i] = alpha | (mag << 16) | (mag << 8) | mag;
         }
+        this.gradCtx.putImageData(this.gradData, 0, 0);
+    }
+
+    computeSimpleGradiant() {
+        this.gradCanvas.width = this.canvas.width;
+        this.gradCanvas.height = this.canvas.width;
+        this.gradCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+        this.gradData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        var UInt32DualData = new Uint32Array(this.gradData.data.buffer);
+        this.UInt8DualGradData = new jsfeat.matrix_t(this.canvas.width, this.canvas.height, jsfeat.U8_t | jsfeat.C1_t);
+
+        var alpha = (0xff << 24);
+        for(var x = 0; x < this.gradCanvas.width; x++) {
+            for(var y = 0; y < this.gradCanvas.height; y++) {
+                var idx = this.at(x, y);
+                var lidx = (x > 0 && y > 0) ? this.at(x-1, y): idx;
+                var uidx = (x > 0 && y > 0) ? this.at(x, y-1) : idx;
+
+                var curPix = this.grayscaleImage.data[idx];
+                var leftPix = this.grayscaleImage.data[lidx];
+                var upPix = this.grayscaleImage.data[uidx];
+
+                var dx = curPix - leftPix;
+                var dy = curPix - upPix;
+                var mag = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))&0xff;;
+
+                this.UInt8DualGradData[idx] = mag;
+                UInt32DualData[idx] = alpha | (mag << 16) | (mag << 8) | mag;
+            }
+        }
+
         this.gradCtx.putImageData(this.gradData, 0, 0);
     }
 
