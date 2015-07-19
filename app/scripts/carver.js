@@ -145,7 +145,7 @@ export default class Carver {
 
     computeSobelGradiant() {
         this.gradCanvas.width = this.canvas.width;
-        this.gradCanvas.height = this.canvas.width;
+        this.gradCanvas.height = this.canvas.height;
         this.gradCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
         this.gradData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         var UInt32DualData = new Uint32Array(this.gradData.data.buffer);
@@ -173,7 +173,7 @@ export default class Carver {
 
     computeSimpleGradiant() {
         this.gradCanvas.width = this.canvas.width;
-        this.gradCanvas.height = this.canvas.width;
+        this.gradCanvas.height = this.canvas.height;
         this.gradCtx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
         this.gradData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
         var UInt32DualData = new Uint32Array(this.gradData.data.buffer);
