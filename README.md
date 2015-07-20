@@ -20,4 +20,5 @@ $ grunt serve
 Thanks to Garrett and Newton for their images
 
 Tower -- https://en.wikipedia.org/wiki/Seam_carving#/media/File:Broadway_tower_edit.jpg
+
 Ballon (Garrent Heath) -- https://www.flickr.com/photos/garrettheath/10262324124
