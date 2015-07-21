@@ -216,26 +216,32 @@ export default class Carver {
             }
         }
 
-        for (var i = 0; i < this.canvas.width; i++) {
-            for(var j = 0; j < this.canvas.height; j++) {
-                this.costMatrix[i][j] = this.cost(i,j, orientation);
+        if (orientation === 'horizontal') {
+            for (var i = 0; i < this.canvas.width; i++) {
+                for(var j = 0; j < this.canvas.height; j++) {
+                    this.costMatrix[i][j] = this.cost(i,j, orientation);
+                }
+            }
+        } else if (orientation === 'vertical') {
+            for (var j = 0; j < this.canvas.height; j++) {
+                for(var i = 0; i < this.canvas.width; i++) {
+                    this.costMatrix[i][j] = this.cost(i,j, orientation);
+                }
             }
         }
-
     }
 
     cost(x, y, orientation) {
-        var gradiantMatrix = this.UInt8DualGradData;
-        var cost = gradiantMatrix[this.at(x,y)];
+        var cost = this.UInt8DualGradData[this.at(x,y)];
         
-        if ((y === 0 && orientation === 'vertical') || (x ===0 && orientation === 'horizontal' )) {
+        if ((y === 0 && orientation === 'vertical') || (x === 0 && orientation === 'horizontal' )) {
             return cost;
         }
-        // var neighbors = this.getNeighbors(x, y, gradiantMatrix, orientation);
+        // var neighbors = this.getNeighbors(x, y, orientation);
         // var minNeighbor = _.min(neighbors, function(pixel){
         //     return pixel.cost;
         // });
-        var minNeighbor = this.getMinNeighbor(x, y, gradiantMatrix, orientation);
+        var minNeighbor = this.getMinNeighbor(x, y, orientation);
         this.neighborMatrix[x][y] = minNeighbor;
         cost = cost + minNeighbor.cost;
         return cost;
@@ -246,66 +252,66 @@ export default class Carver {
         return (y * this.canvas.width + x);
     }
 
-    getNeighbor(x,y,gradiantMatrix) {
+    getNeighbor(x,y) {
         return {
             'x': x,
             'y': y,
-            'cost': gradiantMatrix[this.at(x,y)]
+            'cost': this.costMatrix[x][y]
         };
     }
 
-    getNeighbors(x, y, gradiantMatrix, orientation) {
+    getNeighbors(x, y, orientation) {
         var neighbors = [];
         if(orientation === 'vertical'){
                 if(y === 0){
                     return neighbors;
                 } else if(x === 0) {
-                    neighbors.push(this.getNeighbor(x, y-1, gradiantMatrix));
-                    neighbors.push(this.getNeighbor(x+1, y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x, y-1));
+                    neighbors.push(this.getNeighbor(x+1, y-1));
                 } else if(x === this.canvas.width-1) {
-                    neighbors.push(this.getNeighbor(x-1,y-1, gradiantMatrix));
-                    neighbors.push(this.getNeighbor(x,y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1,y-1));
+                    neighbors.push(this.getNeighbor(x,y-1));
                 } else {
-                    neighbors.push(this.getNeighbor(x-1,y-1, gradiantMatrix));
-                    neighbors.push(this.getNeighbor(x,y-1, gradiantMatrix));
-                    neighbors.push(this.getNeighbor(x+1,y-1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1,y-1));
+                    neighbors.push(this.getNeighbor(x,y-1));
+                    neighbors.push(this.getNeighbor(x+1,y-1));
                 }
             } else if (orientation === 'horizontal'){
                 if(x === 0){
                     return neighbors;
                 } else if(y === 0) {
-                    neighbors.push(this.getNeighbor(x-1, y, gradiantMatrix));
-                    neighbors.push(this.getNeighbor(x-1, y+1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1, y));
+                    neighbors.push(this.getNeighbor(x-1, y+1));
                 } else if(y === this.canvas.height-1) {
-                    neighbors.push(this.getNeighbor(x-1, y-1, gradiantMatrix));
-                    neighbors.push(this.getNeighbor(x-1, y, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1, y-1));
+                    neighbors.push(this.getNeighbor(x-1, y));
                 } else {
-                    neighbors.push(this.getNeighbor(x-1,y-1, gradiantMatrix));
-                    neighbors.push(this.getNeighbor(x-1, y, gradiantMatrix));
-                    neighbors.push(this.getNeighbor(x-1, y+1, gradiantMatrix));
+                    neighbors.push(this.getNeighbor(x-1,y-1));
+                    neighbors.push(this.getNeighbor(x-1, y));
+                    neighbors.push(this.getNeighbor(x-1, y+1));
                 }
             }
         return neighbors;
     }
 
-    getMinNeighbor(x, y, gradiantMatrix, orientation) {
+    getMinNeighbor(x, y, orientation) {
         var neighbor1, neighbor2, neighbor3;
         var neighbor = null;
         if(orientation === 'vertical'){
                 if(y === 0){
                     return neighbors;
                 } else if(x === 0) {
-                    neighbor1 = this.getNeighbor(x, y-1, gradiantMatrix)
-                    neighbor2 = this.getNeighbor(x+1, y-1, gradiantMatrix)
+                    neighbor1 = this.getNeighbor(x, y-1);
+                    neighbor2 = this.getNeighbor(x+1, y-1);
                     neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
                 } else if(x === this.canvas.width-1) {
-                    neighbor1 = this.getNeighbor(x-1,y-1, gradiantMatrix);
-                    neighbor2 = this.getNeighbor(x,y-1, gradiantMatrix);
+                    neighbor1 = this.getNeighbor(x-1,y-1);
+                    neighbor2 = this.getNeighbor(x,y-1);
                     neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
                 } else {
-                    neighbor1 = this.getNeighbor(x-1,y-1, gradiantMatrix);
-                    neighbor2 = this.getNeighbor(x,y-1, gradiantMatrix);
-                    neighbor3 = this.getNeighbor(x+1,y-1, gradiantMatrix);
+                    neighbor1 = this.getNeighbor(x-1,y-1);
+                    neighbor2 = this.getNeighbor(x,y-1);
+                    neighbor3 = this.getNeighbor(x+1,y-1);
                     neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
                     neighbor = neighbor.cost < neighbor3.cost ? neighbor : neighbor3;
                 }
@@ -313,17 +319,17 @@ export default class Carver {
                 if(x === 0){
                     return neighbors;
                 } else if(y === 0) {
-                    neighbor1 = this.getNeighbor(x-1, y, gradiantMatrix);
-                    neighbor2 = this.getNeighbor(x-1, y+1, gradiantMatrix);
+                    neighbor1 = this.getNeighbor(x-1, y);
+                    neighbor2 = this.getNeighbor(x-1, y+1);
                     neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
                 } else if(y === this.canvas.height-1) {
-                    neighbor1 = this.getNeighbor(x-1, y-1, gradiantMatrix);
-                    neighbor2 = this.getNeighbor(x-1, y, gradiantMatrix);
+                    neighbor1 = this.getNeighbor(x-1, y-1);
+                    neighbor2 = this.getNeighbor(x-1, y);
                     neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
                 } else {
-                    neighbor1 = this.getNeighbor(x-1,y-1, gradiantMatrix);
-                    neighbor2 = this.getNeighbor(x-1, y, gradiantMatrix);
-                    neighbor3 = this.getNeighbor(x-1, y+1, gradiantMatrix);
+                    neighbor1 = this.getNeighbor(x-1,y-1);
+                    neighbor2 = this.getNeighbor(x-1, y);
+                    neighbor3 = this.getNeighbor(x-1, y+1);
                     neighbor = neighbor1.cost < neighbor2.cost ? neighbor1 : neighbor2;
                     neighbor = neighbor.cost < neighbor3.cost ? neighbor : neighbor3;
                 }
