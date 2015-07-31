@@ -10,9 +10,11 @@ $(document).ready(function() {
 	function loadImage(imgUrl) {
 		$('.current-content').slideUp(400, function(){
 			$('.intro').hide();
+			resetUi();
 			carver.setImage(imgUrl);
-			$(".current-content").slideDown(600);
+			$('.current-content').slideDown(600);
 		});
+
 	}
 
 	function handleImage(e){
@@ -23,18 +25,22 @@ $(document).ready(function() {
 		reader.readAsDataURL(e.target.files[0]);
 	}
 
-	$('.ballon-link').on('click', function(){
+	function resetUi() {
 		$('#load-image-modal').modal('hide');
+		$('.image-canvas').hide();
+		$('#no-seams-btn').click();
+		$('#original-btn').click();
+	}
+
+	$('.ballon-link').on('click', function(){
 		loadImage('./images/ballon.jpg');
 	});
 
 	$('.tower-link').on('click', function(){
-		$('#load-image-modal').modal('hide');
 		loadImage('./images/tower.jpg');
 	});
 
 	$('.upload-link').on('click', function(e){
-		$('#load-image-modal').modal('hide');
 		e.preventDefault();
 		$('#upload').trigger('click');
 	});
@@ -47,7 +53,7 @@ $(document).ready(function() {
 		var newHeight = parseInt($('#vertical-size').val());
 		// idk, I guess jquery is so slow that it can't disable the element 
 		// before the render loop is blocked?
-		setTimeout(function(){carver.resize(newWidth, newHeight)}, 50);
+		setTimeout(function(){carver.resize(newWidth, newHeight);}, 50);
 	});
 
 	$('.image-btns').on('click', function(e){

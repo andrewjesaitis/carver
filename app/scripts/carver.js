@@ -124,6 +124,9 @@ export default class Carver {
     }
 
     hideSeams() {
+        if (typeof(this.image) === 'undefined') {
+            return;
+        }
         this.seamsDisplayed = 'none';
         this.ctx.putImageData(this.colorData, 0, 0);
         this.gradCtx.putImageData(this.gradData, 0, 0);
