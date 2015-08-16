@@ -43,11 +43,23 @@ export default class Carver {
         this.ctx.putImageData(this.colorData, 0, 0);
     }
 
+    doEnlarge(numSeams, orientation) {
+        this.ctx.putImageData(this.colorData, 0, 0);
+        this.convertGrayscale();
+        this.computeGradiant(false);
+        this.computeEnergy(orientation);
+        var seams = this.computeSeams(numSeams, orientation);
+        this.addSeams(seams, orientation);
+    }
+
     resize(newWidth, newHeight) {
         var rowDelta = this.canvas.height - newHeight;
         var colDelta = this.canvas.width - newWidth;
-        if(colDelta < 0 || rowDelta < 0){
-            console.log('Cannot increase image size...yet');
+        if(colDelta < 0 ) {
+            this.doEnlarge(Math.abs(colDelta), 'vertical');
+        }
+        if(rowDelta < 0){
+            this.doEnlarge(Math.abs(rowDelta), 'horizontal');   
         }
         while(rowDelta > 0 || colDelta > 0) {
             if (colDelta > 0) {
@@ -251,8 +263,8 @@ export default class Carver {
 
     }
 
-    at(x, y) {
-        return (y * this.canvas.width + x);
+    at(x, y, arrWidth=this.canvas.width) {
+        return (y * arrWidth + x);
     }
 
     getNeighbor(x,y) {
@@ -448,5 +460,66 @@ export default class Carver {
                 }       
             }
         }
+    }
+
+    addSeams(seams, orientation) {
+        var delta = seams.length
+        var pixelsToDuplicate = _.flatten(seams, true);
+
+        var imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        var srcCopy = this.copyArrayBuffer(imageData);
+        var srcBuf = new Uint32Array(srcCopy.data.buffer);
+        var offset = 0;
+        var uInt32Data;
+
+        // useful for debugging which seams are being duplicated
+        var testVal = 0xff << 24 | (0xff << 16) | (0x00 << 8) | 0xff;
+
+        if (orientation === 'vertical') {
+            this.canvas.width = this.canvas.width+delta;
+            // this.gradCanvas.width = this.canvas.width;
+            this.colorData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            uInt32Data = new Uint32Array(this.colorData.data.buffer);
+            var pixelsByRow = _.groupBy(pixelsToDuplicate, function(pixel){
+                return pixel.y;
+            });
+            var pixels;
+            for (var y = 0; y < srcCopy.height; y++) {
+                pixels = pixelsByRow[y]
+                pixels = _.sortBy(pixels, function(pixel){return -1 * pixel.x});
+                offset = 0;
+                for (var x = 0; x < srcCopy.width; x++){
+                    uInt32Data[this.at((x+offset), y)] = srcBuf[this.at(x, y, srcCopy.width)];
+                    while(pixels.length > 0 && _.last(pixels).x === x){
+                        ++offset;
+                        uInt32Data[this.at((x + offset), y)] = srcBuf[this.at(x, y, srcCopy.width)];
+                        pixels.pop();
+                        
+                    }    
+                }
+            }
+        } else if (orientation === 'horizontal'){
+            this.canvas.height = this.canvas.height+delta;
+            this.colorData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            uInt32Data = new Uint32Array(this.colorData.data.buffer);
+            var pixelsByCol = _.groupBy(pixelsToDuplicate, function(pixel){
+                return pixel.x;
+            });
+            var pixels;
+            for (var x = 0; x < srcCopy.width; x++) {
+                pixels = pixelsByCol[x]
+                pixels = _.sortBy(pixels, function(pixel){return -1 * pixel.y});
+                offset = 0;
+                for (var y = 0; y < srcCopy.width; y++){
+                    uInt32Data[this.at(x, y+offset)] = srcBuf[this.at(x, y, srcCopy.width)];
+                    while(pixels.length > 0 && _.last(pixels).y === y){
+                        ++offset;
+                        uInt32Data[this.at(x, y + offset)] = srcBuf[this.at(x, y, srcCopy.width)];
+                        pixels.pop();
+                    }    
+                }
+            }
+        }
+        this.ctx.putImageData(this.colorData, 0, 0);
     }
 }
