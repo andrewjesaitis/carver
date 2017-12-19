@@ -23,13 +23,24 @@ module.exports = {
   module: {
     loaders: [
       { test: /\.(jsx|js)$/, loader: 'babel-loader', include: PATHS.app },
-      { test: /\.(png|jpg|svg)$/,
-        loader: 'file-loader?name=/img/[name].[ext]',
-        include: PATHS.app,
-      },
       { test: /\.(ico)$/,
         loader: 'file-loader?name=/[name].[ext]',
         include: PATHS.app,
+      },
+      {
+        test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+        loader: 'url-loader?limit=10000&minetype=application/font-woff',
+      },
+      {
+        test: /\.(ttf|eot|svg|jpg|png)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+        loader: 'file-loader',
+        options: {
+          name: 'images/[name].[ext]',
+        },  
+      },
+      {
+        test: /\.css$/,
+        loader: "style-loader!css-loader",
       },
     ],
   },
