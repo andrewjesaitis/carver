@@ -26,7 +26,7 @@ function Splash({ handleOpen, handleClose, handleSetClick, handleFileChange, sho
               <input
                 id="uploadInput"
                 type="file"
-                onChange={(e) => handleFileChange(e.target.files)}
+                onChange={(e) => handleFileChange(e.target.files[0])}
               />
             </li>
           </ul>

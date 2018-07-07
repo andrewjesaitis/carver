@@ -1,6 +1,7 @@
 import Immutable from 'immutable';
 
-const SET_PATH = 'SET_PATH';
+const SET_RGB_URL = 'SET_RGB_URL';
+const SET_DISPLAY_URL = 'SET_DISPLAY_URL';
 const SELECT_DISPLAY = 'SELECT_DISPLAY';
 const SELECT_SEAM = 'SELECT_SEAM';
 const SELECT_DERIVATIVE = 'SELECT_DERIVATIVE';
@@ -8,10 +9,17 @@ const SET_SIZE = 'SET_SIZE';
 
 // Actions
 
-function setPath(path) {
+function setRgbUrl(rgb_url) {
   return {
-    type: SET_PATH,
-    path,
+    type: SET_RGB_URL,
+    rgb_url,
+  };
+}
+
+function setDisplayUrl(display_url) {
+  return {
+    type: SET_DISPLAY_URL,
+    display_url,
   };
 }
 
@@ -47,7 +55,8 @@ function setSize(width, height) {
 // Reducer
 
 const initialImageState = Immutable.Map({
-  path: '',
+  rgb_url: '',
+  display_url: '',
   display: 'original',
   seam: 'none',
   derivative: 'simple',
@@ -57,9 +66,15 @@ const initialImageState = Immutable.Map({
 
 function image(state = initialImageState, action) {
   switch (action.type) {
-    case SET_PATH:
+    case SET_RGB_URL:
+      const currentDisplayUrl = state.get('display_url');
       return state.merge({
-        path: action.path,
+        display_url: currentDisplayUrl === '' ? action.rgb_url : currentDisplayUrl,
+        rgb_url: action.rgb_url,
+      });
+    case SET_DISPLAY_URL:
+      return state.merge({
+        display_url: action.display_url,
       });
     case SELECT_DISPLAY:
       return state.merge({
@@ -83,4 +98,4 @@ function image(state = initialImageState, action) {
   }
 }
 
-export { image, setPath, selectDisplay, selectSeam, selectDerivative, setSize };
+export { image, setRgbUrl, setDisplayUrl, selectDisplay, selectSeam, selectDerivative, setSize };

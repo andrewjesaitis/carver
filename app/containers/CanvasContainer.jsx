@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
 import { setSize } from '../redux/image';
+import { greyscale, simpleGradiant, sobelGradiant } from '../scripts/carver2';
 
 import SplashContainer from '../containers/SplashContainer';
 import Canvas from '../components/Canvas';
@@ -12,39 +13,53 @@ class CanvasContainer extends Component {
     super(props);
     this.setRef = this.setRef.bind(this);
     this.state = {
+      ctx: null,
       imgData: new Uint8ClampedArray(),
     };
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this.props.path !== nextProps.path) {
-      this.loadImage(nextProps.path);
+    if (this.props.display_url !== nextProps.display_url) {
+      this.loadImage(nextProps.display_url);
     }
-    this.canvas.width = nextProps.width;
-    this.canvas.height = nextProps.height;
+    if (nextProps.display === 'gradiant') {
+      this.gs();
+    }
+    if (this.props.width !== nextProps.width) {
+      this.canvas.width = nextProps.width;
+    }
+    if (this.props.height !== nextProps.height) {
+      this.canvas.height = nextProps.height;
+    }
   }
 
   setRef(c) {
     this.canvas = c;
-    this.ctx = this.canvas.getContext('2d');
+    this.setState({ ctx: this.canvas.getContext('2d') });
   }
 
-  loadImage(path) {
+  loadImage(url) {
     const image = new Image();
-    image.src = path;
+    image.src = url;
     image.onload = () => {
       this.props.setSize(image.width, image.height);
-      this.ctx.drawImage(image, 0, 0);
+      this.state.ctx.drawImage(image, 0, 0);
+      console.log("loaded");
       this.setState({
-        imgData: this.ctx.getImageData(0, 0, this.props.width, this.props.height),
+        imgData: this.state.ctx.getImageData(0, 0, this.props.width, this.props.height),
       });
     };
+  }
+
+  gs() {
+    const gsImgData = sobelGradiant(this.state.imgData);
+    this.state.ctx.putImageData(gsImgData, 0, 0);
   }
 
   render() {
     return (
       <div className="col-md-10 col-md-offset-1 col-xs-12">
-        {this.props.path === '' ?
+        {this.props.display_url === '' ?
           <SplashContainer /> : ''
         }
         <Canvas setRef={this.setRef} />
@@ -54,7 +69,8 @@ class CanvasContainer extends Component {
 }
 
 CanvasContainer.propTypes = {
-  path: PropTypes.string.isRequired,
+  display: PropTypes.string.isRequired,
+  display_url: PropTypes.string.isRequired,
   width: PropTypes.number,
   height: PropTypes.number,
   setSize: PropTypes.func.isRequired,
@@ -66,7 +82,8 @@ function mapDispatchToProps(dispatch) {
 
 function mapStateToProps({ image }) {
   return {
-    path: image.get('path'),
+    display: image.get('display'),
+    display_url: image.get('display_url'),
     width: image.get('width'),
     height: image.get('height'),
   };

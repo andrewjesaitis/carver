@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
-import { setPath } from '../redux/image';
+import { setRgbUrl } from '../redux/image';
 
 import Splash from '../components/Splash';
 
@@ -21,13 +21,19 @@ class SplashContainer extends Component {
   handleClose() {
     this.setState({ showModal: false });
   }
+  handleSetClick(path) {
+    fetch(path)
+      .then((response) => {
+        return response.blob();
+      })
+      .then((blob) => {
+        this.handleFileChange(blob);
+      });
+  }
 
-  handleFileChange(files) {
-    const reader = new FileReader();
-    reader.onload = (readerEvent) => {
-      this.props.setPath(readerEvent.target.result);
-    };
-    reader.readAsDataURL(files[0]);
+  handleFileChange(file) {
+    const localImageUrl = window.URL.createObjectURL(file);
+    this.props.setRgbUrl(localImageUrl);
   }
 
   render() {
@@ -35,8 +41,8 @@ class SplashContainer extends Component {
       <Splash
         handleOpen={() => this.handleOpen()}
         handleClose={() => this.handleClose()}
-        handleSetClick={(path) => this.props.setPath(path)}
-        handleFileChange={(files) => this.handleFileChange(files)}
+        handleSetClick={(path) => this.handleSetClick(path)}
+        handleFileChange={(file) => this.handleFileChange(file)}
         showModal={this.state.showModal}
       />
     );
@@ -44,11 +50,11 @@ class SplashContainer extends Component {
 }
 
 SplashContainer.propTypes = {
-  setPath: PropTypes.func.isRequired,
+  setRgbUrl: PropTypes.func.isRequired,
 };
 
 function mapDispatchToProps(dispatch) {
-  return bindActionCreators({ setPath }, dispatch);
+  return bindActionCreators({ setRgbUrl }, dispatch);
 }
 
 export default connect(null, mapDispatchToProps)(SplashContainer);

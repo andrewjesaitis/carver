@@ -21,7 +21,7 @@ function NavigationBar({ handleSetClick, handleFileChange }) {
             <input
               id="uploadInput"
               type="file"
-              onChange={(e) => handleFileChange(e.target.files)}
+              onChange={(e) => handleFileChange(e.target.files[0])}
             />
           </li>
         </NavDropdown>
