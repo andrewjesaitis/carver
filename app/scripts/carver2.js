@@ -219,8 +219,8 @@ export function computeCostMatrix(gradData, orientation) {
       }
     }
   } else if (orientation === 'vertical') {
-    for (let j = 0; j < w; j++) {
-      for (let i = 0; i < h; i++) {
+    for (let j = 0; j < h; j++) {
+      for (let i = 0; i < w; i++) {
         costMatrix[i][j] = computeCost(i, j, orientation, gradData, costMatrix);
       }
     }
@@ -257,6 +257,12 @@ export function computeSeam(orientation, costMatrix) {
     pos -= 1;
   }
   seam.push({ x, y });
+  return seam;
+}
+
+export function findSeam(orientation, gradData) {
+  const costMatrix = computeCostMatrix(gradData, orientation);
+  const seam = computeSeam(orientation, costMatrix);
   return seam;
 }
 
@@ -303,4 +309,15 @@ export function ripSeam(seam, orientation, imgData) {
     }
   }
   return new ImageData(tgt8View, w, h);
+}
+
+export function calculateDisplayImage(imageData, display, derivative, orientation) {
+  const gradImg = derivative === 'simple' ? simpleGradiant(imageData) : sobelGradiant(imageData);
+  let seam = [];
+  if (orientation === 'vertical' || orientation === 'horizontal') {
+    seam = findSeam(orientation, gradImg);
+  }
+  let dispImgData = display === 'gradiant' ? gradImg : imageData;
+  dispImgData = traceSeam(seam, dispImgData);
+  return dispImgData;
 }

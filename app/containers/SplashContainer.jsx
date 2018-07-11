@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
-import { setRgbUrl } from '../redux/image';
+import { setFileUrl } from '../redux/image';
 
 import Splash from '../components/Splash';
 
@@ -33,7 +33,7 @@ class SplashContainer extends Component {
 
   handleFileChange(file) {
     const localImageUrl = window.URL.createObjectURL(file);
-    this.props.setRgbUrl(localImageUrl);
+    this.props.setFileUrl(localImageUrl);
   }
 
   render() {
@@ -50,11 +50,11 @@ class SplashContainer extends Component {
 }
 
 SplashContainer.propTypes = {
-  setRgbUrl: PropTypes.func.isRequired,
+  setFileUrl: PropTypes.func.isRequired,
 };
 
 function mapDispatchToProps(dispatch) {
-  return bindActionCreators({ setRgbUrl }, dispatch);
+  return bindActionCreators({ setFileUrl }, dispatch);
 }
 
 export default connect(null, mapDispatchToProps)(SplashContainer);
