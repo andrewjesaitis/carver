@@ -24,15 +24,17 @@ class CanvasContainer extends Component {
     if ((this.props.width !== nextProps.width ||
          this.props.height !== nextProps.height) &&
          this.props.rgb_data !== null) {
-        this.resizeImage(nextProps);
+      this.resizeImage(nextProps);
     }
     if ((this.props.display !== nextProps.display ||
          this.props.derivative !== nextProps.derivative ||
-         this.props.seam !== nextProps.seam ||
-         this.props.width !== nextProps.width ||
-         this.props.height !== nextProps.height) &&
+         this.props.seam !== nextProps.seam) &&
          nextProps.rgb_data !== null) {
       this.updateDisplayedImage(nextProps);
+    }
+    if (this.props.width !== nextProps.width ||
+        this.props.height !== nextProps.height) {
+      this.resizeCanvas(nextProps.width, nextProps.height);
     }
   }
 
@@ -46,10 +48,8 @@ class CanvasContainer extends Component {
     image.src = file_url;
     image.onload = () => {
       this.props.setSize(image.width, image.height);
-      this.canvas.width = image.width;
-      this.canvas.height = image.height;
       this.state.ctx.drawImage(image, 0, 0);
-      const imageData = this.state.ctx.getImageData(0, 0, this.props.width, this.props.height);
+      const imageData = this.state.ctx.getImageData(0, 0, image.width, image.height);
       this.props.setRgbData(imageData);
     };
   }
@@ -62,10 +62,13 @@ class CanvasContainer extends Component {
 
   resizeImage({ rgb_data, display, derivative, seam, width, height }) {
     const resizedImage = resize(rgb_data, derivative, width, height);
+    this.props.setSize(resizedImage.width, resizedImage.height);
     this.props.setRgbData(resizedImage);
+  }
+ 
+  resizeCanvas(width, height) {
     this.canvas.width = width;
     this.canvas.height = height;
-    this.props.setSize(resizedImage.width, resizedImage.height);
   }
 
   render() {
