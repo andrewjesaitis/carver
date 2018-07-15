@@ -293,19 +293,37 @@ export function ripSeam(seam, orientation, imgData) {
   const tgtBuf = new ArrayBuffer(w * h * 4);
   const tgt32View = new Uint32Array(tgtBuf);
   const tgt8View = new Uint8ClampedArray(tgtBuf);
-  let tgtIdx = 0;
+  let tgtX = 0;
+  let tgtY = 0;
 
   // convert x,y coordinates to 1-d coordinates in the src 32bit view
   const seamIdxs = seam.map(point => at(point.x, point.y, imgData.width));
-  seamIdxs.sort((a, b) => a - b);
-
   // copy all pixels that aren't in the seam to the target
-  for (let i = 0; i < src32View.length; i++) {
-    if (seamIdxs[0] === i) {
-      seamIdxs.shift();
-    } else {
-      tgt32View[tgtIdx] = src32View[i];
-      tgtIdx += 1;
+  if (orientation === 'vertical') {
+    for (let y = 0; y < imgData.height; y++, tgtY++) {
+      tgtX = 0;
+      for (let x = 0; x < imgData.width; x++, tgtX++) {
+        const srcIdx = at(x, y, imgData.width);
+        const tgtIdx = at(tgtX, tgtY, w);
+        if (seamIdxs.indexOf(srcIdx) !== -1) {
+          tgtX -= 1;
+        } else {
+          tgt32View[tgtIdx] = src32View[srcIdx];
+        }
+      }
+    }
+  } else {
+    for (let x = 0; x < imgData.width; x++, tgtX++) {
+      tgtY = 0;
+      for (let y = 0; y < imgData.height; y++, tgtY++) {
+        const srcIdx = at(x, y, imgData.width);
+        const tgtIdx = at(tgtX, tgtY, w);
+        if (seamIdxs.indexOf(srcIdx) !== -1) {
+          tgtY -= 1;
+        } else {
+          tgt32View[tgtIdx] = src32View[srcIdx];
+        }
+      }
     }
   }
   return new ImageData(tgt8View, w, h);
@@ -320,4 +338,26 @@ export function calculateDisplayImage(imageData, display, derivative, orientatio
   let dispImgData = display === 'gradiant' ? gradImg : imageData;
   dispImgData = traceSeam(seam, dispImgData);
   return dispImgData;
+}
+
+export function resize(imageData, derivative, width, height) {
+  let currentWidth = imageData.width;
+  let currentHeight = imageData.height;
+  let gradImg = derivative === 'simple' ? simpleGradiant(imageData) : sobelGradiant(imageData);
+
+  while (currentWidth > width) {
+    const seam = findSeam('vertical', gradImg);
+    imageData = ripSeam(seam, 'vertical', imageData);
+    gradImg = ripSeam(seam, 'vertical', gradImg);
+    currentWidth -= 1;
+  }
+
+  while (currentHeight > height) {
+    const seam = findSeam('horizontal', gradImg);
+    imageData = ripSeam(seam, 'horizontal', imageData);
+    gradImg = ripSeam(seam, 'horizontal', gradImg);
+    currentHeight -= 1;
+  }
+
+  return imageData;
 }
