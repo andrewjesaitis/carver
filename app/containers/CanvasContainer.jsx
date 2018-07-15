@@ -2,11 +2,12 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
-import { setSize, setDisplayData, setRgbData } from '../redux/image';
+import { setSize, setDisplayData, setRgbData, setIsResizing } from '../redux/image';
 import { calculateDisplayImage, resize } from '../scripts/carver2';
 
 import SplashContainer from '../containers/SplashContainer';
 import Canvas from '../components/Canvas';
+import Loading from '../components/Loading';
 
 class CanvasContainer extends Component {
   constructor(props) {
@@ -21,20 +22,22 @@ class CanvasContainer extends Component {
     if (this.props.file_url !== nextProps.file_url) {
       this.loadImage(nextProps.file_url);
     }
-    if ((this.props.width !== nextProps.width ||
-         this.props.height !== nextProps.height) &&
-         this.props.rgb_data !== null) {
-      this.resizeImage(nextProps);
-    }
     if ((this.props.display !== nextProps.display ||
          this.props.derivative !== nextProps.derivative ||
-         this.props.seam !== nextProps.seam) &&
+         this.props.seam !== nextProps.seam ||
+         this.props.rgb_data !== nextProps.rgb_data) &&
          nextProps.rgb_data !== null) {
       this.updateDisplayedImage(nextProps);
     }
-    if (this.props.width !== nextProps.width ||
-        this.props.height !== nextProps.height) {
-      this.resizeCanvas(nextProps.width, nextProps.height);
+  }
+
+  componentDidUpdate(prevProps) {
+    if ((this.props.width !== prevProps.width ||
+         this.props.height !== prevProps.height) &&
+         this.props.isResizing &&
+         this.props.rgb_data !== null) {
+        this.resizeImage(this.props.rgb_data, this.props.derivative,
+                         this.props.width, this.props.height);
     }
   }
 
@@ -48,27 +51,29 @@ class CanvasContainer extends Component {
     image.src = file_url;
     image.onload = () => {
       this.props.setSize(image.width, image.height);
+      this.canvas.width = image.width;
+      this.canvas.height = image.height;
       this.state.ctx.drawImage(image, 0, 0);
-      const imageData = this.state.ctx.getImageData(0, 0, image.width, image.height);
+      const imageData = this.state.ctx.getImageData(0, 0, this.props.width, this.props.height);
       this.props.setRgbData(imageData);
     };
   }
 
   updateDisplayedImage({ rgb_data, display, derivative, seam, width, height }) {
+    console.log("in updateDisplayedImage");
     const dispImgData = calculateDisplayImage(rgb_data, display, derivative, seam);
     this.state.ctx.putImageData(dispImgData, 0, 0);
     this.props.setDisplayData(this.state.ctx.getImageData(0, 0, width, height));
   }
 
-  resizeImage({ rgb_data, display, derivative, seam, width, height }) {
+  resizeImage(rgb_data, derivative, width, height) {
+    console.log("in resizeImage");
     const resizedImage = resize(rgb_data, derivative, width, height);
-    this.props.setSize(resizedImage.width, resizedImage.height);
     this.props.setRgbData(resizedImage);
-  }
- 
-  resizeCanvas(width, height) {
     this.canvas.width = width;
     this.canvas.height = height;
+    this.props.setSize(resizedImage.width, resizedImage.height);
+    this.props.setIsResizing(false);
   }
 
   render() {
@@ -77,6 +82,7 @@ class CanvasContainer extends Component {
         {this.props.file_url === '' ?
           <SplashContainer /> : ''
         }
+        <Loading isResizing={this.props.isResizing} />
         <Canvas setRef={this.setRef} />
       </div>
     );
@@ -92,13 +98,15 @@ CanvasContainer.propTypes = {
   seam: PropTypes.string.isRequired,
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
+  isResizing: PropTypes.bool.isRequired,
   setSize: PropTypes.func.isRequired,
   setRgbData: PropTypes.func.isRequired,
   setDisplayData: PropTypes.func.isRequired,
+  setIsResizing: PropTypes.func.isRequired,
 };
 
 function mapDispatchToProps(dispatch) {
-  return bindActionCreators({ setDisplayData, setRgbData, setSize }, dispatch);
+  return bindActionCreators({ setDisplayData, setRgbData, setSize, setIsResizing }, dispatch);
 }
 
 function mapStateToProps({ image }) {
@@ -111,6 +119,7 @@ function mapStateToProps({ image }) {
     seam: image.get('seam'),
     width: image.get('width'),
     height: image.get('height'),
+    isResizing: image.get('isResizing'),
   };
 }
 

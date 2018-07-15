@@ -3,9 +3,9 @@ import PropTypes from 'prop-types';
 import { ToggleButtonGroup, ToggleButton, Button, FormGroup, InputGroup,
          Form, FormControl } from 'react-bootstrap';
 
-function Controls({ display, seam, derivative, width, height, onDisplayClick,
-                    onSeamClick, onDerivativeClick, onWidthChange,
-                    onHeightChange, onResizeClick }) {
+function Controls({ display, seam, derivative, width, height, isResizing,
+                    onDisplayClick, onSeamClick, onDerivativeClick,
+                    onWidthChange, onHeightChange, onResizeClick }) {
   return (
     <div className="row">
       <div className="col-md-10 col-md-offset-1 col-xs-12">
@@ -69,7 +69,7 @@ function Controls({ display, seam, derivative, width, height, onDisplayClick,
               </InputGroup>
             </FormGroup>
             <FormGroup className="col-md-4">
-              <Button onClick={onResizeClick}>Resize</Button>
+              <Button onClick={onResizeClick} disabled={isResizing}>Resize</Button>
             </FormGroup>
           </div>
         </Form>

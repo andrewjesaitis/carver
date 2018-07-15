@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
-import { selectDisplay, selectSeam, selectDerivative, setSize } from '../redux/image';
+import { selectDisplay, selectSeam, selectDerivative, setSize, setIsResizing } from '../redux/image';
 
 import Controls from '../components/Controls';
 
@@ -48,10 +48,8 @@ class ControlsContainer extends Component {
   }
 
   onResizeClick() {
-    this.props.setSize(
-      this.state.width,
-      this.state.height
-    );
+    this.props.setIsResizing(true);
+    this.props.setSize(this.state.width, this.state.height);
   }
 
   render() {
@@ -62,6 +60,7 @@ class ControlsContainer extends Component {
         derivative={this.props.derivative}
         width={this.state.width}
         height={this.state.height}
+        isResizing={this.props.isResizing}
         onDisplayClick={(v) => this.onDisplayClick(v)}
         onSeamClick={(v) => this.onSeamClick(v)}
         onDerivativeClick={(v) => this.onDerivativeClick(v)}
@@ -79,10 +78,12 @@ ControlsContainer.propTypes = {
   derivative: PropTypes.string.isRequired,
   width: PropTypes.number,
   height: PropTypes.number,
+  isResizing: PropTypes.bool.isRequired,
   selectDisplay: PropTypes.func.isRequired,
   selectSeam: PropTypes.func.isRequired,
   selectDerivative: PropTypes.func.isRequired,
   setSize: PropTypes.func.isRequired,
+  setIsResizing : PropTypes.func.isRequired,
 };
 
 function mapDispatchToProps(dispatch) {
@@ -90,7 +91,9 @@ function mapDispatchToProps(dispatch) {
     selectDisplay,
     selectSeam,
     selectDerivative,
-    setSize }, dispatch);
+    setSize,
+    setIsResizing
+  }, dispatch);
 }
 
 function mapStateToProps({ image }) {
@@ -100,6 +103,7 @@ function mapStateToProps({ image }) {
     derivative: image.get('derivative'),
     width: image.get('width'),
     height: image.get('height'),
+    isResizing: image.get('isResizing'),
   };
 }
 
