@@ -1,7 +1,8 @@
 import Immutable from 'immutable';
 
-const SET_RGB_URL = 'SET_RGB_URL';
-const SET_DISPLAY_URL = 'SET_DISPLAY_URL';
+const SET_FILE_URL = 'SET_FILE_URL';
+const SET_RGB_DATA = 'SET_RGB_DATA';
+const SET_DISPLAY_DATA = 'SET_DISPLAY_DATA';
 const SELECT_DISPLAY = 'SELECT_DISPLAY';
 const SELECT_SEAM = 'SELECT_SEAM';
 const SELECT_DERIVATIVE = 'SELECT_DERIVATIVE';
@@ -9,17 +10,24 @@ const SET_SIZE = 'SET_SIZE';
 
 // Actions
 
-function setRgbUrl(rgb_url) {
+function setFileUrl(file_url) {
   return {
-    type: SET_RGB_URL,
-    rgb_url,
+    type: SET_FILE_URL,
+    file_url,
   };
 }
 
-function setDisplayUrl(display_url) {
+function setRgbData(rgb_data) {
   return {
-    type: SET_DISPLAY_URL,
-    display_url,
+    type: SET_RGB_DATA,
+    rgb_data,
+  };
+}
+
+function setDisplayData(display_data) {
+  return {
+    type: SET_DISPLAY_DATA,
+    display_data,
   };
 }
 
@@ -55,8 +63,9 @@ function setSize(width, height) {
 // Reducer
 
 const initialImageState = Immutable.Map({
-  rgb_url: '',
-  display_url: '',
+  file_url: '',
+  rgb_data: null,
+  display_data: null,
   display: 'original',
   seam: 'none',
   derivative: 'simple',
@@ -66,15 +75,19 @@ const initialImageState = Immutable.Map({
 
 function image(state = initialImageState, action) {
   switch (action.type) {
-    case SET_RGB_URL:
-      const currentDisplayUrl = state.get('display_url');
+    case SET_FILE_URL:
       return state.merge({
-        display_url: currentDisplayUrl === '' ? action.rgb_url : currentDisplayUrl,
-        rgb_url: action.rgb_url,
+        file_url: action.file_url,
       });
-    case SET_DISPLAY_URL:
+    case SET_RGB_DATA:
+      const currentDisplayData = state.get('display_data');
       return state.merge({
-        display_url: action.display_url,
+        display_data: currentDisplayData === null ? action.rgb_data : currentDisplayData,
+        rgb_data: action.rgb_data,
+      });
+    case SET_DISPLAY_DATA:
+      return state.merge({
+        display_data: action.display_data,
       });
     case SELECT_DISPLAY:
       return state.merge({
@@ -98,4 +111,7 @@ function image(state = initialImageState, action) {
   }
 }
 
-export { image, setRgbUrl, setDisplayUrl, selectDisplay, selectSeam, selectDerivative, setSize };
+export {
+  image, setFileUrl, setRgbData, setDisplayData, selectDisplay,
+  selectSeam, selectDerivative, setSize,
+};

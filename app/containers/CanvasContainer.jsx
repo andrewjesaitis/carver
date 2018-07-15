@@ -3,7 +3,7 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
 import { setSize, setDisplayData, setRgbData } from '../redux/image';
-import { calculateDisplayImage } from '../scripts/carver2';
+import { calculateDisplayImage, resize } from '../scripts/carver2';
 
 import SplashContainer from '../containers/SplashContainer';
 import Canvas from '../components/Canvas';
@@ -21,20 +21,18 @@ class CanvasContainer extends Component {
     if (this.props.file_url !== nextProps.file_url) {
       this.loadImage(nextProps.file_url);
     }
+    if ((this.props.width !== nextProps.width ||
+         this.props.height !== nextProps.height) &&
+         this.props.rgb_data !== null) {
+        this.resizeImage(nextProps);
+    }
     if ((this.props.display !== nextProps.display ||
-        this.props.derivative !== nextProps.derivative ||
-        this.props.seam !== nextProps.seam ||
-        this.props.width !== nextProps.width ||
-        this.props.height !== nextProps.height) &&
-        nextProps.rgb_data !== null
-    ) {
+         this.props.derivative !== nextProps.derivative ||
+         this.props.seam !== nextProps.seam ||
+         this.props.width !== nextProps.width ||
+         this.props.height !== nextProps.height) &&
+         nextProps.rgb_data !== null) {
       this.updateDisplayedImage(nextProps);
-    }
-    if (this.props.width !== nextProps.width) {
-      this.canvas.width = nextProps.width;
-    }
-    if (this.props.height !== nextProps.height) {
-      this.canvas.height = nextProps.height;
     }
   }
 
@@ -48,16 +46,26 @@ class CanvasContainer extends Component {
     image.src = file_url;
     image.onload = () => {
       this.props.setSize(image.width, image.height);
+      this.canvas.width = image.width;
+      this.canvas.height = image.height;
       this.state.ctx.drawImage(image, 0, 0);
       const imageData = this.state.ctx.getImageData(0, 0, this.props.width, this.props.height);
       this.props.setRgbData(imageData);
     };
   }
-  
-  updateDisplayedImage({rgb_data, display, derivative, seam, width, height}) {
+
+  updateDisplayedImage({ rgb_data, display, derivative, seam, width, height }) {
     const dispImgData = calculateDisplayImage(rgb_data, display, derivative, seam);
     this.state.ctx.putImageData(dispImgData, 0, 0);
     this.props.setDisplayData(this.state.ctx.getImageData(0, 0, width, height));
+  }
+
+  resizeImage({ rgb_data, display, derivative, seam, width, height }) {
+    const resizedImage = resize(rgb_data, derivative, width, height);
+    this.props.setRgbData(resizedImage);
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.props.setSize(resizedImage.width, resizedImage.height);
   }
 
   render() {
