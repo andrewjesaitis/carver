@@ -50,3 +50,48 @@ li.upload-list-item:hover {
   padding-top: 15px;
   border-top: 1px solid #e5e5e5;
 }
+
+.loading {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: rgba(255, 255, 255, 0.5)
+}
+
+.vcenter {
+  position: absolute;
+  top: 35%;
+  transform: translate(-50%; -50%);
+  width: 100%;
+}
+.gi-5x {
+  font-size: 5em;
+}
+
+.gi-spin {
+    -webkit-animation: spin 2s infinite linear;
+    animation: spin 2s infinite linear;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+@keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
