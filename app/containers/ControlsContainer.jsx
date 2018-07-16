@@ -11,8 +11,8 @@ class ControlsContainer extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      width: 0,
-      height: 0,
+      width: undefined,
+      height: undefined,
     };
   }
 
@@ -35,21 +35,36 @@ class ControlsContainer extends Component {
     this.props.selectDerivative(v);
   }
 
-  onHeightChange(evt) {
+  onWidthChange(evt) {
     this.setState({
-      height: evt.target.value,
+      width: parseInt(evt.target.value, 10),
     });
   }
 
-  onWidthChange(evt) {
+  onHeightChange(evt) {
     this.setState({
-      width: evt.target.value,
+      height: parseInt(evt.target.value, 10),
     });
   }
+
 
   onResizeClick() {
     this.props.setIsResizing(true);
     this.props.setSize(this.state.width, this.state.height);
+  }
+
+  getWidthValidationState() {
+    if (this.state.width < this.props.maxValidWidth) return 'success';
+    else if (this.state.width > this.props.maxValidWidth ||
+             this.state.width < 0) return 'error';
+    return null;
+  }
+
+  getHeightValidationState() {
+    if (this.state.height < this.props.maxValidHeight) return 'success';
+    else if (this.state.height > this.props.maxValidHeight ||
+             this.state.height < 0) return 'error';
+    return null;
   }
 
   render() {
@@ -65,7 +80,9 @@ class ControlsContainer extends Component {
         onSeamClick={(v) => this.onSeamClick(v)}
         onDerivativeClick={(v) => this.onDerivativeClick(v)}
         onWidthChange={(evt) => this.onWidthChange(evt)}
+        getWidthValidationState={() => this.getWidthValidationState()}
         onHeightChange={(evt) => this.onHeightChange(evt)}
+        getHeightValidationState={() => this.getHeightValidationState()}
         onResizeClick={() => this.onResizeClick()}
       />
     );
@@ -78,12 +95,14 @@ ControlsContainer.propTypes = {
   derivative: PropTypes.string.isRequired,
   width: PropTypes.number,
   height: PropTypes.number,
+  maxValidWidth: PropTypes.number,
+  maxValidHeight: PropTypes.number,
   isResizing: PropTypes.bool.isRequired,
   selectDisplay: PropTypes.func.isRequired,
   selectSeam: PropTypes.func.isRequired,
   selectDerivative: PropTypes.func.isRequired,
   setSize: PropTypes.func.isRequired,
-  setIsResizing : PropTypes.func.isRequired,
+  setIsResizing: PropTypes.func.isRequired,
 };
 
 function mapDispatchToProps(dispatch) {
@@ -92,7 +111,7 @@ function mapDispatchToProps(dispatch) {
     selectSeam,
     selectDerivative,
     setSize,
-    setIsResizing
+    setIsResizing,
   }, dispatch);
 }
 
@@ -103,6 +122,8 @@ function mapStateToProps({ image }) {
     derivative: image.get('derivative'),
     width: image.get('width'),
     height: image.get('height'),
+    maxValidWidth: image.get('maxVaildWidth'),
+    maxValidHeight: image.get('maxValidHeight'),
     isResizing: image.get('isResizing'),
   };
 }

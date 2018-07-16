@@ -1,11 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { ToggleButtonGroup, ToggleButton, Button, FormGroup, InputGroup,
-         Form, FormControl } from 'react-bootstrap';
+import {
+  ToggleButtonGroup, ToggleButton, Button, FormGroup, InputGroup,
+  Form, FormControl,
+} from 'react-bootstrap';
 
-function Controls({ display, seam, derivative, width, height, isResizing,
-                    onDisplayClick, onSeamClick, onDerivativeClick,
-                    onWidthChange, onHeightChange, onResizeClick }) {
+function Controls({
+  display, seam, derivative, width, height, isResizing,
+  onDisplayClick, onSeamClick, onDerivativeClick, onWidthChange,
+  onHeightChange, onResizeClick, getHeightValidationState,
+  getWidthValidationState,
+}) {
   return (
     <div className="row">
       <div className="col-md-10 col-md-offset-1 col-xs-12">
@@ -42,7 +47,10 @@ function Controls({ display, seam, derivative, width, height, isResizing,
         </ToggleButtonGroup>
         <Form className="col-xs-12 col-md-5" inline>
           <div className="row">
-            <FormGroup className="col-md-4">
+            <FormGroup
+              className="col-md-4"
+              validationState={getHeightValidationState()}
+            >
               <InputGroup>
                 <InputGroup.Addon>
                   <span className="glyphicon glyphicon-resize-vertical" aria-hidden="true" />
@@ -55,7 +63,10 @@ function Controls({ display, seam, derivative, width, height, isResizing,
                 />
               </InputGroup>
             </FormGroup>
-            <FormGroup className="col-md-4">
+            <FormGroup
+              className="col-md-4"
+              validationState={getWidthValidationState()}
+            >
               <InputGroup>
                 <InputGroup.Addon>
                   <span className="glyphicon glyphicon-resize-horizontal" aria-hidden="true" />
@@ -90,6 +101,9 @@ Controls.propTypes = {
   onWidthChange: PropTypes.func.isRequired,
   onHeightChange: PropTypes.func.isRequired,
   onResizeClick: PropTypes.func.isRequired,
+  isResizing: PropTypes.bool.isRequired,
+  getHeightValidationState: PropTypes.func.isRequired,
+  getWidthValidationState: PropTypes.func.isRequired,
 };
 
 export default Controls;

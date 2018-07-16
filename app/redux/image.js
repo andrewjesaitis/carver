@@ -77,8 +77,10 @@ const initialImageState = Immutable.Map({
   display: 'original',
   seam: 'none',
   derivative: 'simple',
-  width: 0,
-  height: 0,
+  width: undefined,
+  height: undefined,
+  maxValidWidth: undefined,
+  maxValidHeight: undefined,
   isResizing: false,
 });
 
@@ -97,6 +99,8 @@ function image(state = initialImageState, action) {
     case SET_DISPLAY_DATA:
       return state.merge({
         display_data: action.display_data,
+        maxValidWidth: action.display_data.width,
+        maxValidHeight: action.display_data.height,
       });
     case SELECT_DISPLAY:
       return state.merge({
