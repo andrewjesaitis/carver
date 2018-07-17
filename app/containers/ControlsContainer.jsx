@@ -11,15 +11,15 @@ class ControlsContainer extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      width: undefined,
-      height: undefined,
+      width: '',
+      height: '',
     };
   }
 
   componentWillReceiveProps({ width, height }) {
     this.setState({
-      width,
-      height,
+      width: width.toString(),
+      height: height.toString(),
     });
   }
 
@@ -37,13 +37,13 @@ class ControlsContainer extends Component {
 
   onWidthChange(evt) {
     this.setState({
-      width: parseInt(evt.target.value, 10),
+      width: evt.target.value,
     });
   }
 
   onHeightChange(evt) {
     this.setState({
-      height: parseInt(evt.target.value, 10),
+      height: evt.target.value,
     });
   }
 
@@ -54,16 +54,24 @@ class ControlsContainer extends Component {
   }
 
   getWidthValidationState() {
-    if (this.state.width < this.props.maxValidWidth) return 'success';
-    else if (this.state.width > this.props.maxValidWidth ||
-             this.state.width < 0) return 'error';
+    const w = parseInt(this.state.width, 10);
+    if (w < this.props.maxValidWidth) {
+      return 'success';
+    } else if ((this.props.maxValidWidth && w > this.props.maxValidWidth) || 
+             w < 0) {
+      return 'error';
+    }
     return null;
   }
 
   getHeightValidationState() {
-    if (this.state.height < this.props.maxValidHeight) return 'success';
-    else if (this.state.height > this.props.maxValidHeight ||
-             this.state.height < 0) return 'error';
+    const h = parseInt(this.state.height, 10);
+    if (h < this.props.maxValidHeight) {
+      return 'success';
+    } else if ((this.props.maxValidHeight && h > this.props.maxValidHeight) || 
+               h < 0) {
+      return 'error';
+    }
     return null;
   }
 
@@ -122,7 +130,7 @@ function mapStateToProps({ image }) {
     derivative: image.get('derivative'),
     width: image.get('width'),
     height: image.get('height'),
-    maxValidWidth: image.get('maxVaildWidth'),
+    maxValidWidth: image.get('maxValidWidth'),
     maxValidHeight: image.get('maxValidHeight'),
     isResizing: image.get('isResizing'),
   };
