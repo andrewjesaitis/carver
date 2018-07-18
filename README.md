@@ -11,8 +11,8 @@ Caver is a browser based seam carving app written in es6. All calculations and i
 ```
 $ git clone https://github.com/andrewjesaitis/carver.git
 $ cd carver
-$ npm install && bower install
-$ grunt serve
+$ npm install
+$ npm run start
 ```
 
 ### Images
