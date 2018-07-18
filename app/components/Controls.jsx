@@ -6,7 +6,7 @@ import {
 } from 'react-bootstrap';
 
 function Controls({
-  display, seam, derivative, width, height, isResizing,
+  display, seam, derivative, width, height, canResize,
   onDisplayClick, onSeamClick, onDerivativeClick, onWidthChange,
   onHeightChange, onResizeClick, getHeightValidationState,
   getWidthValidationState,
@@ -80,7 +80,7 @@ function Controls({
               </InputGroup>
             </FormGroup>
             <FormGroup className="col-md-4">
-              <Button onClick={onResizeClick} disabled={isResizing}>Resize</Button>
+              <Button onClick={onResizeClick} disabled={!canResize}>Resize</Button>
             </FormGroup>
           </div>
         </Form>
@@ -101,7 +101,7 @@ Controls.propTypes = {
   onWidthChange: PropTypes.func.isRequired,
   onHeightChange: PropTypes.func.isRequired,
   onResizeClick: PropTypes.func.isRequired,
-  isResizing: PropTypes.bool.isRequired,
+  canResize: PropTypes.bool.isRequired,
   getHeightValidationState: PropTypes.func.isRequired,
   getWidthValidationState: PropTypes.func.isRequired,
 };

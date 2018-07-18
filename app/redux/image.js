@@ -99,8 +99,6 @@ function image(state = initialImageState, action) {
     case SET_DISPLAY_DATA:
       return state.merge({
         display_data: action.display_data,
-        maxValidWidth: action.display_data.width,
-        maxValidHeight: action.display_data.height,
       });
     case SELECT_DISPLAY:
       return state.merge({
@@ -118,6 +116,8 @@ function image(state = initialImageState, action) {
       return state.merge({
         width: parseInt(action.width, 10),
         height: parseInt(action.height, 10),
+        maxValidWidth: parseInt(action.width, 10),
+        maxValidHeight: parseInt(action.height, 10),
       });
     case IS_RESIZING:
       return state.merge({

@@ -13,13 +13,15 @@ class ControlsContainer extends Component {
     this.state = {
       width: '',
       height: '',
+      canResize: false,
     };
   }
 
-  componentWillReceiveProps({ width, height }) {
+  componentWillReceiveProps({ width, height, isResizing }) {
     this.setState({
       width: width.toString(),
       height: height.toString(),
+      canResize: this.canResize(width, height, isResizing),
     });
   }
 
@@ -38,41 +40,52 @@ class ControlsContainer extends Component {
   onWidthChange(evt) {
     this.setState({
       width: evt.target.value,
+      canResize: this.canResize(evt.target.value, this.state.height, this.state.isResizing),
     });
   }
 
   onHeightChange(evt) {
     this.setState({
       height: evt.target.value,
+      canResize: this.canResize(this.state.width, evt.target.value, this.state.isResizing),
     });
   }
-
 
   onResizeClick() {
     this.props.setIsResizing(true);
     this.props.setSize(this.state.width, this.state.height);
   }
 
-  getWidthValidationState() {
-    const w = parseInt(this.state.width, 10);
+  getWidthValidationState(width = this.state.width) {
+    const w = parseInt(width, 10);
     if (w < this.props.maxValidWidth) {
       return 'success';
-    } else if ((this.props.maxValidWidth && w > this.props.maxValidWidth) || 
+    } else if ((this.props.maxValidWidth && w > this.props.maxValidWidth) ||
              w < 0) {
       return 'error';
     }
     return null;
   }
 
-  getHeightValidationState() {
-    const h = parseInt(this.state.height, 10);
+  getHeightValidationState(height = this.state.height) {
+    const h = parseInt(height, 10);
     if (h < this.props.maxValidHeight) {
       return 'success';
-    } else if ((this.props.maxValidHeight && h > this.props.maxValidHeight) || 
+    } else if ((this.props.maxValidHeight && h > this.props.maxValidHeight) ||
                h < 0) {
       return 'error';
     }
     return null;
+  }
+
+  canResize(width, height, isResizing) {
+    const widthState = this.getWidthValidationState(width);
+    const widthError = widthState === 'error';
+    const heightState = this.getHeightValidationState(height);
+    const heightError = heightState === 'error';
+    const bothNull = heightState === null && widthState === null;
+    // not (bad states)
+    return !(isResizing || widthError || heightError || bothNull);
   }
 
   render() {
@@ -83,7 +96,7 @@ class ControlsContainer extends Component {
         derivative={this.props.derivative}
         width={this.state.width}
         height={this.state.height}
-        isResizing={this.props.isResizing}
+        canResize={this.state.canResize}
         onDisplayClick={(v) => this.onDisplayClick(v)}
         onSeamClick={(v) => this.onSeamClick(v)}
         onDerivativeClick={(v) => this.onDerivativeClick(v)}
