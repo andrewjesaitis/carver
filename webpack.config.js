@@ -7,6 +7,7 @@ const HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
 });
 
 const path = require('path');
+
 const PATHS = {
   app: path.join(__dirname, 'app'),
   dist: path.join(__dirname, 'dist'),
@@ -22,6 +23,14 @@ module.exports = {
   },
   module: {
     loaders: [
+      {
+        test: /\.worker\.js$/,
+        include: PATHS.app,
+        use: [
+          { loader: 'worker-loader' },
+          { loader: 'babel-loader' },
+        ]
+      },
       { test: /\.(jsx|js)$/, loader: 'babel-loader', include: PATHS.app },
       { test: /\.(ico)$/,
         loader: 'file-loader?name=/[name].[ext]',
@@ -36,12 +45,12 @@ module.exports = {
         loader: 'file-loader',
         options: {
           name: 'images/[name].[ext]',
-        },  
+        },
       },
       {
         test: /\.css$/,
-        loader: "style-loader!css-loader",
-      },
+        loader: 'style-loader!css-loader',
+      }, 
     ],
   },
   plugins: [

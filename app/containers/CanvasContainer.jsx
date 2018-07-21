@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
+import {Form, FormGroup, Button } from 'react-bootstrap';
 import { setSize, setDisplayData, setRgbData, setIsResizing } from '../redux/image';
 import { calculateDisplayImage, resize } from '../scripts/carver2';
 
@@ -9,12 +10,17 @@ import SplashContainer from '../containers/SplashContainer';
 import Canvas from '../components/Canvas';
 import Loading from '../components/Loading';
 
+const Worker = require('../scripts/carver.worker.js');
+
 class CanvasContainer extends Component {
   constructor(props) {
     super(props);
     this.setRef = this.setRef.bind(this);
+    this.worker = new Worker();
+    this.worker.onmessage = msg => this.setState({ msg: msg.data });
     this.state = {
       ctx: null,
+      msg: 0,
     };
   }
 
@@ -44,6 +50,10 @@ class CanvasContainer extends Component {
   setRef(c) {
     this.canvas = c;
     this.setState({ ctx: this.canvas.getContext('2d') });
+  }
+
+  doWork() {
+    this.worker.postMessage(null);
   }
 
   loadImage(file_url) {
@@ -79,6 +89,12 @@ class CanvasContainer extends Component {
   render() {
     return (
       <div className="col-md-10 col-md-offset-1 col-xs-12">
+          <Form>
+            <FormGroup>
+              <h3>{this.state.msg}</h3>
+              <Button onClick={() => this.doWork(null)}>Work</Button>
+            </FormGroup>
+          </Form>
         {this.props.file_url === '' ?
           <SplashContainer /> : ''
         }
