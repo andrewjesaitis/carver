@@ -2,9 +2,8 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
-import {Form, FormGroup, Button } from 'react-bootstrap';
+import WebworkerPromise from 'webworker-promise';
 import { setSize, setDisplayData, setRgbData, setIsResizing } from '../redux/image';
-import { calculateDisplayImage, resize } from '../scripts/carver2';
 
 import SplashContainer from '../containers/SplashContainer';
 import Canvas from '../components/Canvas';
@@ -16,11 +15,9 @@ class CanvasContainer extends Component {
   constructor(props) {
     super(props);
     this.setRef = this.setRef.bind(this);
-    this.worker = new Worker();
-    this.worker.onmessage = msg => this.setState({ msg: msg.data });
+    this.worker = new WebworkerPromise(new Worker());
     this.state = {
       ctx: null,
-      msg: 0,
     };
   }
 
@@ -42,18 +39,15 @@ class CanvasContainer extends Component {
          this.props.height !== prevProps.height) &&
          this.props.isResizing &&
          this.props.rgb_data !== null) {
-        this.resizeImage(this.props.rgb_data, this.props.derivative,
-                         this.props.width, this.props.height);
+        this.resizeImage(
+          this.props.rgb_data, this.props.derivative,
+          this.props.width, this.props.height);
     }
   }
 
   setRef(c) {
     this.canvas = c;
     this.setState({ ctx: this.canvas.getContext('2d') });
-  }
-
-  doWork() {
-    this.worker.postMessage(null);
   }
 
   loadImage(file_url) {
@@ -64,37 +58,44 @@ class CanvasContainer extends Component {
       this.canvas.width = image.width;
       this.canvas.height = image.height;
       this.state.ctx.drawImage(image, 0, 0);
-      const imageData = this.state.ctx.getImageData(0, 0, this.props.width, this.props.height);
+      const imageData = this.state.ctx.getImageData(
+        0, 0, this.props.width, this.props.height);
       this.props.setRgbData(imageData);
     };
   }
 
   updateDisplayedImage({ rgb_data, display, derivative, seam, width, height }) {
-    console.log("in updateDisplayedImage");
-    const dispImgData = calculateDisplayImage(rgb_data, display, derivative, seam);
-    this.state.ctx.putImageData(dispImgData, 0, 0);
-    this.props.setDisplayData(this.state.ctx.getImageData(0, 0, width, height));
+    if (rgb_data === null) return null;
+    this.worker.postMessage({
+      type: 'CALCULATE_DISPLAY_IMAGE',
+      params: { rgb_data, display, derivative, seam, width, height },
+    }).then(msg => {
+      this.state.ctx.putImageData(msg.dispImgData, 0, 0);
+      this.props.setDisplayData(
+        this.state.ctx.getImageData(
+          0, 0, msg.dispImgData.width, msg.dispImgData.height));
+    });
+    return null;
   }
 
   resizeImage(rgb_data, derivative, width, height) {
-    console.log("in resizeImage");
-    const resizedImage = resize(rgb_data, derivative, width, height);
-    this.props.setRgbData(resizedImage);
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.props.setSize(resizedImage.width, resizedImage.height);
-    this.props.setIsResizing(false);
+    if (rgb_data === null) return null;
+    this.worker.postMessage({
+      type: 'RESIZE',
+      params: { rgb_data, derivative, width, height },
+    }).then(msg => {
+      this.props.setRgbData(msg.resizedImgData);
+      this.canvas.width = msg.resizedImgData.width;
+      this.canvas.height = msg.resizedImgData.height;
+      this.props.setSize(msg.resizedImgData.width, msg.resizedImgData.height);
+      this.props.setIsResizing(false);
+    });
+    return null;
   }
 
   render() {
     return (
       <div className="col-md-10 col-md-offset-1 col-xs-12">
-          <Form>
-            <FormGroup>
-              <h3>{this.state.msg}</h3>
-              <Button onClick={() => this.doWork(null)}>Work</Button>
-            </FormGroup>
-          </Form>
         {this.props.file_url === '' ?
           <SplashContainer /> : ''
         }
