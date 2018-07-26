@@ -1,3 +1,4 @@
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
@@ -12,10 +13,9 @@ function Controls({
   getWidthValidationState,
 }) {
   return (
-    <div className="row">
-      <div className="col-md-10 col-md-offset-1 col-xs-12">
+    <Form>
+      <FormGroup className="col-lg-2 col-sm-4">
         <ToggleButtonGroup
-          className="col-md-2 col-xs-12"
           type="radio"
           name="display"
           value={display}
@@ -24,8 +24,9 @@ function Controls({
           <ToggleButton value="original">Original</ToggleButton>
           <ToggleButton value="gradiant">Gradiant</ToggleButton>
         </ToggleButtonGroup>
+      </FormGroup>
+      <FormGroup className="col-lg-3 col-sm-4">
         <ToggleButtonGroup
-          className="col-md-3 col-xs-12"
           type="radio"
           name="seams"
           value={seam}
@@ -35,8 +36,9 @@ function Controls({
           <ToggleButton value="vertical">Vertical</ToggleButton>
           <ToggleButton value="horizontal">Horizontal</ToggleButton>
         </ToggleButtonGroup>
+      </FormGroup>
+      <FormGroup className="col-lg-2 col-sm-4">
         <ToggleButtonGroup
-          className="col-md-2 col-xs-12"
           type="radio"
           name="derivative"
           value={derivative}
@@ -45,47 +47,43 @@ function Controls({
           <ToggleButton value="simple">Simple</ToggleButton>
           <ToggleButton value="sobel">Sobel</ToggleButton>
         </ToggleButtonGroup>
-        <Form className="col-xs-12 col-md-5" inline>
-          <div className="row">
-            <FormGroup
-              className="col-md-4"
-              validationState={getHeightValidationState()}
-            >
-              <InputGroup>
-                <InputGroup.Addon>
-                  <span className="glyphicon glyphicon-resize-vertical" aria-hidden="true" />
-                </InputGroup.Addon>
-                <FormControl
-                  type="number"
-                  placeholder="Pixels"
-                  value={height}
-                  onChange={onHeightChange}
-                />
-              </InputGroup>
-            </FormGroup>
-            <FormGroup
-              className="col-md-4"
-              validationState={getWidthValidationState()}
-            >
-              <InputGroup>
-                <InputGroup.Addon>
-                  <span className="glyphicon glyphicon-resize-horizontal" aria-hidden="true" />
-                </InputGroup.Addon>
-                <FormControl
-                  type="number"
-                  placeholder="Pixels"
-                  value={width}
-                  onChange={onWidthChange}
-                />
-              </InputGroup>
-            </FormGroup>
-            <FormGroup className="col-md-4">
-              <Button onClick={onResizeClick} disabled={!canResize}>Resize</Button>
-            </FormGroup>
-          </div>
-        </Form>
-      </div>
-    </div>
+      </FormGroup>
+      <FormGroup
+        className="col-lg-2 col-sm-4"
+        validationState={getHeightValidationState()}
+      >
+        <InputGroup>
+          <InputGroup.Addon>
+            <span className="glyphicon glyphicon-resize-vertical" aria-hidden="true" />
+          </InputGroup.Addon>
+          <FormControl
+            type="number"
+            placeholder="Pixels"
+            value={height}
+            onChange={onHeightChange}
+          />
+        </InputGroup>
+      </FormGroup>
+      <FormGroup
+        className="col-lg-2 col-sm-4"
+        validationState={getWidthValidationState()}
+      >
+        <InputGroup>
+          <InputGroup.Addon>
+            <span className="glyphicon glyphicon-resize-horizontal" aria-hidden="true" />
+          </InputGroup.Addon>
+          <FormControl
+            type="number"
+            placeholder="Pixels"
+            value={width}
+            onChange={onWidthChange}
+          />
+        </InputGroup>
+      </FormGroup>
+      <FormGroup className="col-lg-1 col-sm-2">
+        <Button onClick={onResizeClick} disabled={!canResize}>Resize</Button>
+      </FormGroup>
+    </Form>
   );
 }
 
