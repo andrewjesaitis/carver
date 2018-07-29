@@ -4,3 +4,4 @@ node_modules
 .gitattributes
 .tern-port
 package-lock.json
+/dist
