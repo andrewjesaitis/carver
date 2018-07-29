@@ -8,9 +8,11 @@ import { createLogger } from 'redux-logger';
 import { image } from './redux/image';
 import Main from './components/Main';
 
-import Bootstrap from 'bootstrap/dist/css/bootstrap.css';
-import ballonImage from './images/ballon.jpg';
-import towerImage from './images/tower.jpg';
+// require static assests so they are picked up by webpack
+require('bootstrap/dist/css/bootstrap.css');
+require('./images/ballon.jpg');
+require('./images/tower.jpg');
+require('./favicon.ico');
 
 let middleware = [thunkMiddleware];
 

@@ -31,8 +31,13 @@ module.exports = {
           { loader: 'babel-loader' },
         ]
       },
-      { test: /\.(jsx|js)$/, loader: 'babel-loader', include: PATHS.app },
-      { test: /\.(ico)$/,
+      { 
+        test: /\.(jsx|js)$/, 
+        loader: 'babel-loader', 
+        include: PATHS.app 
+      },
+      {
+        test: /\.(ico)$/,
         loader: 'file-loader?name=/[name].[ext]',
         include: PATHS.app,
       },
