@@ -5,3 +5,9 @@ node_modules
 .tern-port
 package-lock.json
 /dist
+
+carver_c.js
+*.mem
+*.map
+*.wasm
+*.wast
