@@ -6,6 +6,7 @@ const SET_DISPLAY_DATA = 'SET_DISPLAY_DATA';
 const SELECT_DISPLAY = 'SELECT_DISPLAY';
 const SELECT_SEAM = 'SELECT_SEAM';
 const SELECT_DERIVATIVE = 'SELECT_DERIVATIVE';
+const SELECT_RUNTIME = 'SELECT_RUNTIME';
 const SET_SIZE = 'SET_SIZE';
 const IS_RESIZING = 'IS_RESIZING';
 
@@ -53,6 +54,13 @@ function selectDerivative(derivative) {
   };
 }
 
+function selectRuntime(runtime) {
+  return {
+    type: SELECT_RUNTIME,
+    runtime,
+  };
+}
+
 function setSize(width, height) {
   return {
     type: SET_SIZE,
@@ -77,6 +85,7 @@ const initialImageState = Immutable.Map({
   display: 'original',
   seam: 'none',
   derivative: 'simple',
+  runtime: 'js',
   width: null,
   height: null,
   maxValidWidth: null,
@@ -112,6 +121,10 @@ function image(state = initialImageState, action) {
       return state.merge({
         derivative: action.derivative,
       });
+    case SELECT_RUNTIME:
+      return state.merge({
+        runtime: action.runtime,
+      });
     case SET_SIZE:
       return state.merge({
         width: parseInt(action.width, 10),
@@ -130,5 +143,5 @@ function image(state = initialImageState, action) {
 
 export {
   image, setFileUrl, setRgbData, setDisplayData, selectDisplay,
-  selectSeam, selectDerivative, setSize, setIsResizing,
+  selectSeam, selectDerivative, selectRuntime, setSize, setIsResizing,
 };

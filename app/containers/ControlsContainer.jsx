@@ -3,7 +3,10 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import PropTypes from 'prop-types';
-import { selectDisplay, selectSeam, selectDerivative, setSize, setIsResizing } from '../redux/image';
+import {
+  selectDisplay, selectSeam, selectDerivative, selectRuntime,
+  setSize, setIsResizing,
+} from '../redux/image';
 
 import Controls from '../components/Controls';
 
@@ -35,6 +38,10 @@ class ControlsContainer extends Component {
 
   onDerivativeClick(v) {
     this.props.selectDerivative(v);
+  }
+
+  onRuntimeClick(v) {
+    this.props.selectRuntime(v);
   }
 
   onWidthChange(evt) {
@@ -94,12 +101,14 @@ class ControlsContainer extends Component {
         display={this.props.display}
         seam={this.props.seam}
         derivative={this.props.derivative}
+        runtime={this.props.runtime}
         width={this.state.width}
         height={this.state.height}
         canResize={this.state.canResize}
         onDisplayClick={(v) => this.onDisplayClick(v)}
         onSeamClick={(v) => this.onSeamClick(v)}
         onDerivativeClick={(v) => this.onDerivativeClick(v)}
+        onRuntimeClick={(v) => this.onRuntimeClick(v)}
         onWidthChange={(evt) => this.onWidthChange(evt)}
         getWidthValidationState={() => this.getWidthValidationState()}
         onHeightChange={(evt) => this.onHeightChange(evt)}
@@ -114,6 +123,7 @@ ControlsContainer.propTypes = {
   display: PropTypes.string.isRequired,
   seam: PropTypes.string.isRequired,
   derivative: PropTypes.string.isRequired,
+  runtime: PropTypes.string.isRequired,
   width: PropTypes.number,
   height: PropTypes.number,
   maxValidWidth: PropTypes.number,
@@ -122,6 +132,7 @@ ControlsContainer.propTypes = {
   selectDisplay: PropTypes.func.isRequired,
   selectSeam: PropTypes.func.isRequired,
   selectDerivative: PropTypes.func.isRequired,
+  selectRuntime: PropTypes.func.isRequired,
   setSize: PropTypes.func.isRequired,
   setIsResizing: PropTypes.func.isRequired,
 };
@@ -131,6 +142,7 @@ function mapDispatchToProps(dispatch) {
     selectDisplay,
     selectSeam,
     selectDerivative,
+    selectRuntime,
     setSize,
     setIsResizing,
   }, dispatch);
@@ -141,6 +153,7 @@ function mapStateToProps({ image }) {
     display: image.get('display'),
     seam: image.get('seam'),
     derivative: image.get('derivative'),
+    runtime: image.get('runtime'),
     width: image.get('width'),
     height: image.get('height'),
     maxValidWidth: image.get('maxValidWidth'),
