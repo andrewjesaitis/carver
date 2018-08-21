@@ -1,10 +1,9 @@
 CC=emcc
-SRC=carver.cpp
-CFLAGS=-Werror -std=c++11 -O3 -g0
-EMSCRIPTEN_FLAGS=-s WASM=1 \
-	-s EXPORTED_FUNCTIONS='["_grayscale"]'
+SRC=carver.c
+CFLAGS=-Wall -O2
+EMSCRIPTEN_FLAGS=-s WASM=1 -s MODULARIZE=1 -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall"]'
 OUTPUT_NAME=carver_c
-ODIR=../app/scripts
+ODIR=../app/lib
 OUTPUT=$(OUTPUT_NAME).js
 
 all: $(SRC)

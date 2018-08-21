@@ -66,8 +66,10 @@ class CanvasContainer extends Component {
 
   updateDisplayedImage({ rgb_data, display, derivative, seam, width, height }) {
     if (rgb_data === null) return null;
+    const isJS = this.props.runtime === 'js';
+    console.log("in updateDisplayedImage");
     this.worker.postMessage({
-      type: 'CALCULATE_DISPLAY_IMAGE',
+      type: isJS ? 'CALCULATE_DISPLAY_IMAGE_JS' : 'CALCULATE_DISPLAY_IMAGE_WASM',
       params: { rgb_data, display, derivative, seam, width, height },
     }).then(msg => {
       this.state.ctx.putImageData(msg.dispImgData, 0, 0);
@@ -80,8 +82,9 @@ class CanvasContainer extends Component {
 
   resizeImage(rgb_data, derivative, width, height) {
     if (rgb_data === null) return null;
+    const isJS = this.props.runtime === 'js';
     this.worker.postMessage({
-      type: 'RESIZE',
+      type: isJS ? 'RESIZE_JS' : 'RESIZE_WASM',
       params: { rgb_data, derivative, width, height },
     }).then(msg => {
       this.props.setRgbData(msg.resizedImgData);
@@ -112,6 +115,7 @@ CanvasContainer.propTypes = {
   rgb_data: PropTypes.object,
   display: PropTypes.string.isRequired,
   derivative: PropTypes.string.isRequired,
+  runtime: PropTypes.string.isRequired,
   seam: PropTypes.string.isRequired,
   width: PropTypes.number,
   height: PropTypes.number,
@@ -133,6 +137,7 @@ function mapStateToProps({ image }) {
     rgb_data: image.get('rgb_data'),
     display: image.get('display'),
     derivative: image.get('derivative'),
+    runtime: image.get('runtime'),
     seam: image.get('seam'),
     width: image.get('width'),
     height: image.get('height'),

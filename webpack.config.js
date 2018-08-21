@@ -14,15 +14,23 @@ const PATHS = {
 };
 
 module.exports = {
+  mode: "development",
   entry: [
     './app/index.jsx',
   ],
   output: {
     path: PATHS.dist,
     filename: 'index_bundle.js',
+    globalObject: 'this', // fix for https://github.com/webpack/webpack/issues/6642
   },
   module: {
-    loaders: [
+    defaultRules: [
+      {
+        type: "javascript/auto",
+        resolve: {}
+      }
+    ],
+    rules: [
       {
         test: /\.worker\.js$/,
         include: PATHS.app,
@@ -35,6 +43,16 @@ module.exports = {
         test: /\.(jsx|js)$/, 
         loader: 'babel-loader', 
         include: PATHS.app 
+      },
+      {
+      test: /\.(wasm)$/,
+      include: PATHS.app,
+      use: {
+        loader: 'file-loader',
+        options: {
+          name: '[name].[ext]'
+        },
+      },
       },
       {
         test: /\.(ico)$/,
@@ -55,7 +73,7 @@ module.exports = {
       {
         test: /\.css$/,
         loader: 'style-loader!css-loader',
-      }, 
+      },
     ],
   },
   plugins: [
@@ -70,7 +88,12 @@ module.exports = {
     extensions: [
       '.js',
       '.jsx',
+      '.c',
+      '.cpp',
     ],
+  },
+  node: {
+    fs: 'empty',
   },
   devtool: 'source-map',
   devServer: {
