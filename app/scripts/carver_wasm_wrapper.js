@@ -15,10 +15,18 @@ const CarverEnum = {
 export function calculateDisplayImageWASM(imageData, display, derivative, orientation) {
   const w = imageData.width;
   const h = imageData.height;
-  const len = w * h;
+  const len = w * h * 4;
   console.log("called calculateDisplayImage");
-  wasm().then(mod => { 
-    console.log("module loaded"); 
-    console.log(mod.ccall('add', 'nummber', ['number', 'number'], [2,3]));
+  // ready property hack to deal with promise-like module
+  // see: https://github.com/kripken/emscripten/issues/5820#issuecomment-385722568
+  const imageDataPromise = wasm().ready.then(mod => {
+    console.log("module loaded");
+    const mem = mod._malloc(len);
+    mod. HEAPU8.set(imageData.data, mem);
+    mod._calculateDisplayImage(mem, 0, 0, 0, len);
+    const dispImageData = new Uint8ClampedArray(mod.HEAPU8.subarray(mem, mem + len));
+    mod._free(mem);
+    return new ImageData(dispImageData, w, h);
   });
+  return imageDataPromise;
 }

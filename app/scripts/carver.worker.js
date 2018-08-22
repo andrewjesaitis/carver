@@ -1,7 +1,7 @@
 import 'babel-polyfill';
 import registerWorker from 'webworker-promise/lib/register';
-import { calculateDisplayImage, resize } from '../scripts/carver2';
-import { calculateDisplayImageWASM } from '../scripts/carver_wasm_wrapper.js';
+import { calculateDisplayImage, resize } from './carver2';
+import { calculateDisplayImageWASM } from './carver_wasm_wrapper';
 
 
 registerWorker(async (msg, emit) => {
@@ -11,17 +11,14 @@ registerWorker(async (msg, emit) => {
   switch (msg.type) {
     case 'CALCULATE_DISPLAY_IMAGE_JS':
       const dispImgData = calculateDisplayImage(
-        msg.params.rgb_data, msg.params.display, 
+        msg.params.rgb_data, msg.params.display,
         msg.params.derivative, msg.params.seam);
       return { dispImgData };
     case 'CALCULATE_DISPLAY_IMAGE_WASM':
-      const dispImgDataWasm = calculateDisplayImageWASM(
-        msg.params.rgb_data, msg.params.display, 
+      const dispImgDataWasm = await calculateDisplayImageWASM(
+        msg.params.rgb_data, msg.params.display,
         msg.params.derivative, msg.params.seam);
-      return {dispImgData: msg.params.rgb_data}; // early return noop
-      return dispImgDataWasm.then(dispImgData => {
-        return { dispImgDataWasm };
-      });
+      return { dispImgData: dispImgDataWasm };
     case 'RESIZE_JS':
       const resizedImgData =  resize(
         msg.params.rgb_data, msg.params.derivative,
@@ -34,4 +31,3 @@ registerWorker(async (msg, emit) => {
       throw new Error('Invalid message type');
   }
 });
-
