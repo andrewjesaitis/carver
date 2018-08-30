@@ -35,7 +35,7 @@ export function simpleGradiant(imgData) {
 
   const gsImgData = greyscale(imgData);
 
-  // alpha is 225 == 0xff in hex
+  // alpha is 255 == 0xff in hex
   const alpha = 0xff;
 
   for (let y = 0; y < h; y++) {

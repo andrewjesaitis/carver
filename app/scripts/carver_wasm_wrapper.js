@@ -23,7 +23,7 @@ export function calculateDisplayImageWASM(imageData, display, derivative, orient
     console.log("module loaded");
     const mem = mod._malloc(len);
     mod. HEAPU8.set(imageData.data, mem);
-    mod._calculateDisplayImage(mem, 0, 0, 0, len);
+    mod._calculateDisplayImage(mem, 0, 0, 0, w, h);
     const dispImageData = new Uint8ClampedArray(mod.HEAPU8.subarray(mem, mem + len));
     mod._free(mem);
     return new ImageData(dispImageData, w, h);
