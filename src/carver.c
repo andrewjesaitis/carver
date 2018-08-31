@@ -59,13 +59,68 @@ void simpleGradiant(unsigned char* data, unsigned char* gradData, int w, int h) 
   }
 }
 
+void sobelGradiant(unsigned char* data, unsigned char* gradData, int w, int h) {
+  int len = w * h * 4;
+  unsigned char gsData[len];
+  grayscale(data, gsData, len);
+
+  const int kernelX[3][3] = {
+    {-1, 0, 1},
+    {-2, 0, 2},
+    {-1, 0, 1},
+  };
+
+  const int kernelY[3][3] = {
+    {-1, -2, -1},
+    {0, 0, 0},
+    {1, 2, 1},
+  };
+
+  for (int x = 0; x < w; x++) {
+    for (int y = 0; y < h; y++) {
+      // index into 4 channel 1d array
+      int idx = at(x, y, w, 4);
+      // calculate gradiant by convolving kernel to produce differentials
+      int dx = (
+        (kernelX[0][0] * gsData[at(x - 1, y - 1, w, 4)]) +
+        (kernelX[0][1] * gsData[at(x, y - 1, w, 4)]) +
+        (kernelX[0][2] * gsData[at(x + 1, y - 1, w, 4)]) +
+        (kernelX[1][0] * gsData[at(x - 1, y, w, 4)]) +
+        (kernelX[1][1] * gsData[at(x, y, w, 4)]) +
+        (kernelX[1][2] * gsData[at(x + 1, y, w, 4)]) +
+        (kernelX[2][0] * gsData[at(x - 1, y + 1, w, 4)]) +
+        (kernelX[2][1] * gsData[at(x, y + 1, w, 4)]) +
+        (kernelX[2][2] * gsData[at(x + 1, y + 1, w, 4)])
+      );
+      int dy = (
+        (kernelY[0][0] * gsData[at(x - 1, y - 1, w, 4)]) +
+        (kernelY[0][1] * gsData[at(x, y - 1, w, 4)]) +
+        (kernelY[0][2] * gsData[at(x + 1, y - 1, w, 4)]) +
+        (kernelY[1][0] * gsData[at(x - 1, y, w, 4)]) +
+        (kernelY[1][1] * gsData[at(x, y, w, 4)]) +
+        (kernelY[1][2] * gsData[at(x + 1, y, w, 4)]) +
+        (kernelY[2][0] * gsData[at(x - 1, y + 1, w, 4)]) +
+        (kernelY[2][1] * gsData[at(x, y + 1, w, 4)]) +
+        (kernelY[2][2] * gsData[at(x + 1, y + 1, w, 4)])
+        );
+      // calculate magnitude via root of sum of squares
+      int mag = ((int) sqrt(pow(dx, 2) + pow(dy, 2)));
+      // update image
+      gradData[idx] = mag;
+      gradData[idx + 1] = mag;
+      gradData[idx + 2] = mag;
+      // skip grdData[idx + 3] (ie alpha channel)
+    } // y
+  } // x               
+}
+
 EMSCRIPTEN_KEEPALIVE
 void calculateDisplayImage(unsigned char* data, int display, int derivative,
                            int orientaion, int w, int h) {
   int len = w * h * 4;
   unsigned char input[len];
   memcpy(input, data, len);
-  simpleGradiant(input, data, w, h);
+  sobelGradiant(input, data, w, h);
 }
 
 EMSCRIPTEN_KEEPALIVE
