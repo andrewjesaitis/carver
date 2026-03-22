@@ -10,6 +10,7 @@ function at(x: number, y: number, arrWidth: number, channels = 1): number {
   return ((y * arrWidth) + x) * channels;
 }
 
+/** Converts an RGBA image to greyscale using luminance weights (0.21R + 0.72G + 0.07B). */
 export function greyscale(imgData: ImageData): ImageData {
   const imgDataCopy = copyImageData(imgData);
   for (let i = 0; i < imgDataCopy.data.length; i += 4) {
@@ -25,6 +26,11 @@ export function greyscale(imgData: ImageData): ImageData {
   return imgDataCopy;
 }
 
+/**
+ * Computes a gradient image using simple forward differences (dx, dy) on the greyscale image.
+ * Magnitude is clamped to [0, 255]. Left column and top row are treated as zero-gradient
+ * boundaries (matches original carver2.js behavior).
+ */
 export function simpleGradient(imgData: ImageData): ImageData {
   const buf = new ArrayBuffer(imgData.data.length);
   const view32 = new Uint32Array(buf);
@@ -53,6 +59,11 @@ export function simpleGradient(imgData: ImageData): ImageData {
   return new ImageData(view8, w, h);
 }
 
+/**
+ * Computes a gradient image using the Sobel operator on the greyscale image.
+ * Out-of-bounds pixel reads return 0 (Uint8ClampedArray behavior), which gives
+ * zero-gradient borders — matches original carver2.js behavior.
+ */
 export function sobelGradient(imgData: ImageData): ImageData {
   const buf = new ArrayBuffer(imgData.data.length);
   const view32 = new Uint32Array(buf);
@@ -151,6 +162,12 @@ function computeCost(
   return { current: { x, y, cost: cost + minNeighbor.cost }, minNeighbor };
 }
 
+/**
+ * Builds a cumulative cost matrix via dynamic programming over the gradient image.
+ * For `'vertical'` orientation, costs accumulate top-to-bottom (seams run vertically).
+ * For `'horizontal'`, costs accumulate left-to-right (seams run horizontally).
+ * Each cell stores its cumulative cost and a pointer to its minimum-cost neighbor.
+ */
 export function computeCostMatrix(gradData: ImageData, orientation: Orientation): CostMatrix {
   const w = gradData.width;
   const h = gradData.height;
@@ -202,11 +219,20 @@ function computeSeam(orientation: Orientation, costMatrix: CostMatrix): Seam {
   return seam;
 }
 
+/**
+ * Finds the lowest-energy seam in the gradient image.
+ * Returns an array of `{x, y}` points tracing the seam from the high-cost edge back to
+ * the low-cost edge (bottom→top for `'vertical'`, right→left for `'horizontal'`).
+ */
 export function findSeam(orientation: Orientation, gradData: ImageData): Seam {
   const costMatrix = computeCostMatrix(gradData, orientation);
   return computeSeam(orientation, costMatrix);
 }
 
+/**
+ * Removes a seam from the image, returning a new `ImageData` one pixel narrower
+ * (`'vertical'`) or shorter (`'horizontal'`).
+ */
 export function ripSeam(seam: Seam, orientation: Orientation, imgData: ImageData): ImageData {
   const src32 = new Uint32Array(imgData.data.buffer);
   const w = orientation === 'vertical' ? imgData.width - 1 : imgData.width;
@@ -242,6 +268,11 @@ export function ripSeam(seam: Seam, orientation: Orientation, imgData: ImageData
   return new ImageData(tgt8, w, h);
 }
 
+/**
+ * Seam-carves `imageData` down to `width` × `height` using the specified gradient `derivative`.
+ * Silently no-ops for any dimension already at or below the target (enlargement is not supported).
+ * The gradient is computed once upfront and seam-ripped in parallel with the image each iteration.
+ */
 export function resize(
   imageData: ImageData,
   derivative: Derivative,
