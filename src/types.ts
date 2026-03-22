@@ -9,7 +9,7 @@ export type Seam = SeamPoint[];
 
 export interface CostCell {
   current: { x: number; y: number; cost: number };
-  minNeighbor: SeamPoint | null;
+  minNeighbor: (SeamPoint & { cost: number }) | null;
 }
 export type CostMatrix = CostCell[][];
 

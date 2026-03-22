@@ -94,3 +94,180 @@ export function sobelGradient(imgData: ImageData): ImageData {
   }
   return new ImageData(view8, w, h);
 }
+
+function getCost(x: number, y: number, costMatrix: CostMatrix): { x: number; y: number; cost: number } {
+  return { x, y, cost: costMatrix[x][y].current.cost };
+}
+
+function getMinNeighbor(
+  x: number, y: number, orientation: Orientation, costMatrix: CostMatrix
+): ({ x: number; y: number; cost: number }) | null {
+  let n1, n2, n3;
+  if (orientation === 'vertical') {
+    if (y === 0) return null;
+    if (x === 0) {
+      n1 = getCost(x, y - 1, costMatrix);
+      n2 = getCost(x + 1, y - 1, costMatrix);
+      return n1.cost < n2.cost ? n1 : n2;
+    }
+    if (x === costMatrix.length - 1) {
+      n1 = getCost(x - 1, y - 1, costMatrix);
+      n2 = getCost(x, y - 1, costMatrix);
+      return n1.cost < n2.cost ? n1 : n2;
+    }
+    n1 = getCost(x - 1, y - 1, costMatrix);
+    n2 = getCost(x, y - 1, costMatrix);
+    n3 = getCost(x + 1, y - 1, costMatrix);
+    const min12 = n1.cost < n2.cost ? n1 : n2;
+    return min12.cost < n3.cost ? min12 : n3;
+  } else {
+    if (x === 0) return null;
+    if (y === 0) {
+      n1 = getCost(x - 1, y, costMatrix);
+      n2 = getCost(x - 1, y + 1, costMatrix);
+      return n1.cost < n2.cost ? n1 : n2;
+    }
+    if (y === costMatrix[0].length - 1) {
+      n1 = getCost(x - 1, y - 1, costMatrix);
+      n2 = getCost(x - 1, y, costMatrix);
+      return n1.cost < n2.cost ? n1 : n2;
+    }
+    n1 = getCost(x - 1, y - 1, costMatrix);
+    n2 = getCost(x - 1, y, costMatrix);
+    n3 = getCost(x - 1, y + 1, costMatrix);
+    const min12 = n1.cost < n2.cost ? n1 : n2;
+    return min12.cost < n3.cost ? min12 : n3;
+  }
+}
+
+function computeCost(
+  x: number, y: number, orientation: Orientation, gradData: ImageData, costMatrix: CostMatrix
+): CostCell {
+  const cost = gradData.data[at(x, y, gradData.width, 4)];
+  if ((y === 0 && orientation === 'vertical') || (x === 0 && orientation === 'horizontal')) {
+    return { current: { x, y, cost }, minNeighbor: null };
+  }
+  const minNeighbor = getMinNeighbor(x, y, orientation, costMatrix)!;
+  return { current: { x, y, cost: cost + minNeighbor.cost }, minNeighbor };
+}
+
+export function computeCostMatrix(gradData: ImageData, orientation: Orientation): CostMatrix {
+  const w = gradData.width;
+  const h = gradData.height;
+  const costMatrix: CostMatrix = Array.from({ length: w }, (_, i) =>
+    Array.from({ length: h }, (_, j) => ({
+      current: { x: i, y: j, cost: 255 },
+      minNeighbor: null,
+    }))
+  );
+  if (orientation === 'horizontal') {
+    for (let i = 0; i < w; i++)
+      for (let j = 0; j < h; j++)
+        costMatrix[i][j] = computeCost(i, j, orientation, gradData, costMatrix);
+  } else {
+    for (let j = 0; j < h; j++)
+      for (let i = 0; i < w; i++)
+        costMatrix[i][j] = computeCost(i, j, orientation, gradData, costMatrix);
+  }
+  return costMatrix;
+}
+
+function getBottomEdgeMin(costMatrix: CostMatrix): CostCell {
+  const lastRowIdx = costMatrix[0].length - 1;
+  return costMatrix
+    .map(col => col[lastRowIdx])
+    .reduce((a, b) => (a.current.cost < b.current.cost ? a : b));
+}
+
+function getRightEdgeMin(costMatrix: CostMatrix): CostCell {
+  const lastColIdx = costMatrix.length - 1;
+  return costMatrix[lastColIdx]
+    .reduce((a, b) => (a.current.cost < b.current.cost ? a : b));
+}
+
+function computeSeam(orientation: Orientation, costMatrix: CostMatrix): Seam {
+  const minCost = orientation === 'vertical'
+    ? getBottomEdgeMin(costMatrix)
+    : getRightEdgeMin(costMatrix);
+  let { x, y } = minCost.current;
+  let pos = orientation === 'vertical' ? y : x;
+  const seam: Seam = [];
+  while (pos > 0) {
+    seam.push({ x, y });
+    const neighbor = costMatrix[x][y].minNeighbor!;
+    ({ x, y } = neighbor);
+    pos -= 1;
+  }
+  seam.push({ x, y });
+  return seam;
+}
+
+export function findSeam(orientation: Orientation, gradData: ImageData): Seam {
+  const costMatrix = computeCostMatrix(gradData, orientation);
+  return computeSeam(orientation, costMatrix);
+}
+
+export function ripSeam(seam: Seam, orientation: Orientation, imgData: ImageData): ImageData {
+  const src32 = new Uint32Array(imgData.data.buffer);
+  const w = orientation === 'vertical' ? imgData.width - 1 : imgData.width;
+  const h = orientation === 'horizontal' ? imgData.height - 1 : imgData.height;
+  const tgtBuf = new ArrayBuffer(w * h * 4);
+  const tgt32 = new Uint32Array(tgtBuf);
+  const tgt8 = new Uint8ClampedArray(tgtBuf);
+  const seamIdxs = new Set(seam.map(p => at(p.x, p.y, imgData.width)));
+  let tgtX = 0, tgtY = 0;
+
+  if (orientation === 'vertical') {
+    for (let y = 0; y < imgData.height; y++, tgtY++) {
+      tgtX = 0;
+      for (let x = 0; x < imgData.width; x++) {
+        const srcIdx = at(x, y, imgData.width);
+        if (seamIdxs.has(srcIdx)) continue;
+        tgt32[at(tgtX, tgtY, w)] = src32[srcIdx];
+        tgtX++;
+      }
+    }
+  } else {
+    tgtX = 0;
+    for (let x = 0; x < imgData.width; x++, tgtX++) {
+      tgtY = 0;
+      for (let y = 0; y < imgData.height; y++) {
+        const srcIdx = at(x, y, imgData.width);
+        if (seamIdxs.has(srcIdx)) continue;
+        tgt32[at(tgtX, tgtY, w)] = src32[srcIdx];
+        tgtY++;
+      }
+    }
+  }
+  return new ImageData(tgt8, w, h);
+}
+
+export function resize(
+  imageData: ImageData,
+  derivative: Derivative,
+  width: number,
+  height: number
+): ImageData {
+  let currentWidth = imageData.width;
+  let currentHeight = imageData.height;
+  // Gradient is computed once and then seam-ripped alongside imageData each iteration.
+  // This avoids recomputing the gradient per step (a deliberate performance tradeoff that
+  // matches the original carver2.js implementation exactly).
+  let gradImg = derivative === 'simple' ? simpleGradient(imageData) : sobelGradient(imageData);
+
+  while (currentWidth > width) {
+    const seam = findSeam('vertical', gradImg);
+    imageData = ripSeam(seam, 'vertical', imageData);
+    gradImg = ripSeam(seam, 'vertical', gradImg);
+    currentWidth -= 1;
+  }
+
+  while (currentHeight > height) {
+    const seam = findSeam('horizontal', gradImg);
+    imageData = ripSeam(seam, 'horizontal', imageData);
+    gradImg = ripSeam(seam, 'horizontal', gradImg);
+    currentHeight -= 1;
+  }
+
+  return imageData;
+}
