@@ -313,6 +313,8 @@ Seam carving (content-aware image resizing) web app.
 
 - **Phase 1 (current):** Vite + React + TypeScript baseline
 - **Phase 2 (planned):** Rust/WASM seam carving pipeline, toggled against the TS version at runtime
+- **Phase 3 (planned):** Visualizer — step-through mode, canvas overlay visualizations, playback controls (play/pause/speed/step)
+- **Phase 4 (planned):** Polish — responsive UI, drag-and-drop upload, before/after slider comparison; maybe vertical seam carving and content amplification
 
 ## Stack
 - Vite, React, TypeScript (strict)
