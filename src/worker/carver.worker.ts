@@ -15,7 +15,7 @@ self.onmessage = (event: MessageEvent<ResizeRequest>) => {
       width: result.width,
       height: result.height,
     };
-    (self as unknown as Worker).postMessage(response, [response.buffer]);
+    self.postMessage(response, [response.buffer]);
   } catch (err) {
     const error: ResizeError = {
       type: 'RESIZE_ERROR',
