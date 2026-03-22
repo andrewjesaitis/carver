@@ -7,7 +7,7 @@ function copyImageData(src: ImageData): ImageData {
 }
 
 function at(x: number, y: number, arrWidth: number, channels = 1): number {
-  return ((y * arrWidth) + x) * channels;
+  return (y * arrWidth + x) * channels;
 }
 
 /** Converts an RGBA image to greyscale using luminance weights (0.21R + 0.72G + 0.07B). */
@@ -15,9 +15,7 @@ export function greyscale(imgData: ImageData): ImageData {
   const imgDataCopy = copyImageData(imgData);
   for (let i = 0; i < imgDataCopy.data.length; i += 4) {
     const avg = Math.round(
-      (0.21 * imgDataCopy.data[i]) +
-      (0.72 * imgDataCopy.data[i + 1]) +
-      (0.07 * imgDataCopy.data[i + 2])
+      0.21 * imgDataCopy.data[i] + 0.72 * imgDataCopy.data[i + 1] + 0.07 * imgDataCopy.data[i + 2],
     );
     imgDataCopy.data[i] = avg;
     imgDataCopy.data[i + 1] = avg;
@@ -48,8 +46,8 @@ export function simpleGradient(imgData: ImageData): ImageData {
       // Note: `x > 0 && y > 0` intentionally collapses left-column and top-row
       // boundary conditions together. This matches the original carver2.js behavior exactly;
       // the expected test values below were generated from this same logic.
-      const lidx = (x > 0 && y > 0) ? at(x - 1, y, w, c) : idx;
-      const uidx = (x > 0 && y > 0) ? at(x, y - 1, w, c) : idx;
+      const lidx = x > 0 && y > 0 ? at(x - 1, y, w, c) : idx;
+      const uidx = x > 0 && y > 0 ? at(x, y - 1, w, c) : idx;
       const dx = gsImgData.data[idx] - gsImgData.data[lidx];
       const dy = gsImgData.data[idx] - gsImgData.data[uidx];
       const mag = Math.sqrt(dx * dx + dy * dy) & 0xff;
@@ -74,30 +72,38 @@ export function sobelGradient(imgData: ImageData): ImageData {
   const gsImgData = greyscale(imgData);
   const alpha = 0xff;
 
-  const kernelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
-  const kernelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
+  const kernelX = [
+    [-1, 0, 1],
+    [-2, 0, 2],
+    [-1, 0, 1],
+  ];
+  const kernelY = [
+    [-1, -2, -1],
+    [0, 0, 0],
+    [1, 2, 1],
+  ];
 
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       const dx =
         kernelX[0][0] * gsImgData.data[at(x - 1, y - 1, w, c)] +
-        kernelX[0][1] * gsImgData.data[at(x,     y - 1, w, c)] +
+        kernelX[0][1] * gsImgData.data[at(x, y - 1, w, c)] +
         kernelX[0][2] * gsImgData.data[at(x + 1, y - 1, w, c)] +
-        kernelX[1][0] * gsImgData.data[at(x - 1, y,     w, c)] +
-        kernelX[1][1] * gsImgData.data[at(x,     y,     w, c)] +
-        kernelX[1][2] * gsImgData.data[at(x + 1, y,     w, c)] +
+        kernelX[1][0] * gsImgData.data[at(x - 1, y, w, c)] +
+        kernelX[1][1] * gsImgData.data[at(x, y, w, c)] +
+        kernelX[1][2] * gsImgData.data[at(x + 1, y, w, c)] +
         kernelX[2][0] * gsImgData.data[at(x - 1, y + 1, w, c)] +
-        kernelX[2][1] * gsImgData.data[at(x,     y + 1, w, c)] +
+        kernelX[2][1] * gsImgData.data[at(x, y + 1, w, c)] +
         kernelX[2][2] * gsImgData.data[at(x + 1, y + 1, w, c)];
       const dy =
         kernelY[0][0] * gsImgData.data[at(x - 1, y - 1, w, c)] +
-        kernelY[0][1] * gsImgData.data[at(x,     y - 1, w, c)] +
+        kernelY[0][1] * gsImgData.data[at(x, y - 1, w, c)] +
         kernelY[0][2] * gsImgData.data[at(x + 1, y - 1, w, c)] +
-        kernelY[1][0] * gsImgData.data[at(x - 1, y,     w, c)] +
-        kernelY[1][1] * gsImgData.data[at(x,     y,     w, c)] +
-        kernelY[1][2] * gsImgData.data[at(x + 1, y,     w, c)] +
+        kernelY[1][0] * gsImgData.data[at(x - 1, y, w, c)] +
+        kernelY[1][1] * gsImgData.data[at(x, y, w, c)] +
+        kernelY[1][2] * gsImgData.data[at(x + 1, y, w, c)] +
         kernelY[2][0] * gsImgData.data[at(x - 1, y + 1, w, c)] +
-        kernelY[2][1] * gsImgData.data[at(x,     y + 1, w, c)] +
+        kernelY[2][1] * gsImgData.data[at(x, y + 1, w, c)] +
         kernelY[2][2] * gsImgData.data[at(x + 1, y + 1, w, c)];
       const mag = Math.sqrt(dx * dx + dy * dy) & 0xff;
       view32[at(x, y, w)] = (alpha << 24) | (mag << 16) | (mag << 8) | mag;
@@ -106,13 +112,20 @@ export function sobelGradient(imgData: ImageData): ImageData {
   return new ImageData(view8, w, h);
 }
 
-function getCost(x: number, y: number, costMatrix: CostMatrix): { x: number; y: number; cost: number } {
+function getCost(
+  x: number,
+  y: number,
+  costMatrix: CostMatrix,
+): { x: number; y: number; cost: number } {
   return { x, y, cost: costMatrix[x][y].current.cost };
 }
 
 function getMinNeighbor(
-  x: number, y: number, orientation: Orientation, costMatrix: CostMatrix
-): ({ x: number; y: number; cost: number }) | null {
+  x: number,
+  y: number,
+  orientation: Orientation,
+  costMatrix: CostMatrix,
+): { x: number; y: number; cost: number } | null {
   let n1, n2, n3;
   if (orientation === 'vertical') {
     if (y === 0) return null;
@@ -152,7 +165,11 @@ function getMinNeighbor(
 }
 
 function computeCost(
-  x: number, y: number, orientation: Orientation, gradData: ImageData, costMatrix: CostMatrix
+  x: number,
+  y: number,
+  orientation: Orientation,
+  gradData: ImageData,
+  costMatrix: CostMatrix,
 ): CostCell {
   const cost = gradData.data[at(x, y, gradData.width, 4)];
   if ((y === 0 && orientation === 'vertical') || (x === 0 && orientation === 'horizontal')) {
@@ -175,7 +192,7 @@ export function computeCostMatrix(gradData: ImageData, orientation: Orientation)
     Array.from({ length: h }, (_, j) => ({
       current: { x: i, y: j, cost: 255 },
       minNeighbor: null,
-    }))
+    })),
   );
   if (orientation === 'horizontal') {
     for (let i = 0; i < w; i++)
@@ -192,20 +209,18 @@ export function computeCostMatrix(gradData: ImageData, orientation: Orientation)
 function getBottomEdgeMin(costMatrix: CostMatrix): CostCell {
   const lastRowIdx = costMatrix[0].length - 1;
   return costMatrix
-    .map(col => col[lastRowIdx])
+    .map((col) => col[lastRowIdx])
     .reduce((a, b) => (a.current.cost < b.current.cost ? a : b));
 }
 
 function getRightEdgeMin(costMatrix: CostMatrix): CostCell {
   const lastColIdx = costMatrix.length - 1;
-  return costMatrix[lastColIdx]
-    .reduce((a, b) => (a.current.cost < b.current.cost ? a : b));
+  return costMatrix[lastColIdx].reduce((a, b) => (a.current.cost < b.current.cost ? a : b));
 }
 
 function computeSeam(orientation: Orientation, costMatrix: CostMatrix): Seam {
-  const minCost = orientation === 'vertical'
-    ? getBottomEdgeMin(costMatrix)
-    : getRightEdgeMin(costMatrix);
+  const minCost =
+    orientation === 'vertical' ? getBottomEdgeMin(costMatrix) : getRightEdgeMin(costMatrix);
   let { x, y } = minCost.current;
   let pos = orientation === 'vertical' ? y : x;
   const seam: Seam = [];
@@ -240,8 +255,9 @@ export function ripSeam(seam: Seam, orientation: Orientation, imgData: ImageData
   const tgtBuf = new ArrayBuffer(w * h * 4);
   const tgt32 = new Uint32Array(tgtBuf);
   const tgt8 = new Uint8ClampedArray(tgtBuf);
-  const seamIdxs = new Set(seam.map(p => at(p.x, p.y, imgData.width)));
-  let tgtX = 0, tgtY = 0;
+  const seamIdxs = new Set(seam.map((p) => at(p.x, p.y, imgData.width)));
+  let tgtX = 0,
+    tgtY = 0;
 
   if (orientation === 'vertical') {
     for (let y = 0; y < imgData.height; y++, tgtY++) {
@@ -277,7 +293,7 @@ export function resize(
   imageData: ImageData,
   derivative: Derivative,
   width: number,
-  height: number
+  height: number,
 ): ImageData {
   let currentWidth = imageData.width;
   let currentHeight = imageData.height;

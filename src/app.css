@@ -1,4 +1,8 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   font-family: system-ui, sans-serif;
@@ -43,7 +47,7 @@ label {
   font-weight: 500;
 }
 
-input[type="number"],
+input[type='number'],
 select {
   padding: 6px 8px;
   border: 1px solid #ccc;
@@ -52,9 +56,11 @@ select {
   width: 90px;
 }
 
-select { width: auto; }
+select {
+  width: auto;
+}
 
-input[type="file"] {
+input[type='file'] {
   font-size: 0.85rem;
 }
 

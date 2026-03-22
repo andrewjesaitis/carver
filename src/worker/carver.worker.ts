@@ -1,4 +1,9 @@
 /// <reference lib="webworker" />
+/**
+ * Web Worker that runs seam carving off the main thread.
+ * Accepts a RESIZE message with a transferred ArrayBuffer and replies with
+ * the carved result (or RESIZE_ERROR on failure).
+ */
 
 import type { ResizeRequest, ResizeResponse, ResizeError } from '../types';
 import { resize } from '../algorithm/carver';

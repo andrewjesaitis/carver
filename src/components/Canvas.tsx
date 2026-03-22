@@ -5,6 +5,7 @@ interface CanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
+/** Renders ImageData onto a canvas element. Hidden when no image is loaded. */
 export default function Canvas({ imageData, canvasRef }: CanvasProps) {
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -17,9 +18,6 @@ export default function Canvas({ imageData, canvasRef }: CanvasProps) {
   }, [imageData, canvasRef]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ display: imageData ? 'block' : 'none', maxWidth: '100%' }}
-    />
+    <canvas ref={canvasRef} style={{ display: imageData ? 'block' : 'none', maxWidth: '100%' }} />
   );
 }

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "vitest"
+    "test": "vitest",
+    "lint": "oxlint src",
+    "fmt": "oxfmt src",
+    "fmt:check": "oxfmt --check src"
   },
   "devDependencies": {
     "@types/react": "^18.0.0",
@@ -15,7 +18,9 @@
     "jsdom": "^24.0.0",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^1.0.0",
+    "oxlint": "latest",
+    "oxfmt": "latest"
   },
   "dependencies": {
     "react": "^18.0.0",

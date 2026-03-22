@@ -15,6 +15,7 @@ interface ControlsProps {
   onDownload: () => void;
 }
 
+/** Returns true when the Carve button should be disabled. */
 function isResizeDisabled(
   status: ControlsProps['status'],
   imageData: ImageData | null,
@@ -28,10 +29,19 @@ function isResizeDisabled(
   return false;
 }
 
+/** Upload, dimension, gradient, and action controls for the seam carving workflow. */
 export default function Controls({
-  imageData, targetWidth, targetHeight, derivative, status,
-  onUpload, onTargetWidthChange, onTargetHeightChange, onDerivativeChange,
-  onResize, onDownload,
+  imageData,
+  targetWidth,
+  targetHeight,
+  derivative,
+  status,
+  onUpload,
+  onTargetWidthChange,
+  onTargetHeightChange,
+  onDerivativeChange,
+  onResize,
+  onDownload,
 }: ControlsProps) {
   return (
     <div className="controls">
@@ -41,7 +51,7 @@ export default function Controls({
           <input
             type="file"
             accept="image/*"
-            onChange={e => {
+            onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) onUpload(file);
             }}
@@ -57,7 +67,7 @@ export default function Controls({
             value={targetWidth}
             min={1}
             max={imageData?.width ?? undefined}
-            onChange={e => onTargetWidthChange(Number(e.target.value))}
+            onChange={(e) => onTargetWidthChange(Number(e.target.value))}
           />
         </label>
         <label>
@@ -67,7 +77,7 @@ export default function Controls({
             value={targetHeight}
             min={1}
             max={imageData?.height ?? undefined}
-            onChange={e => onTargetHeightChange(Number(e.target.value))}
+            onChange={(e) => onTargetHeightChange(Number(e.target.value))}
           />
         </label>
       </div>
@@ -77,7 +87,7 @@ export default function Controls({
           Gradient
           <select
             value={derivative}
-            onChange={e => onDerivativeChange(e.target.value as Derivative)}
+            onChange={(e) => onDerivativeChange(e.target.value as Derivative)}
           >
             <option value="sobel">Sobel</option>
             <option value="simple">Simple</option>
@@ -92,10 +102,7 @@ export default function Controls({
         >
           {status === 'processing' ? 'Carving…' : 'Carve'}
         </button>
-        <button
-          onClick={onDownload}
-          disabled={!imageData}
-        >
+        <button onClick={onDownload} disabled={!imageData}>
           Download
         </button>
       </div>
