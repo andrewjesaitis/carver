@@ -3,6 +3,7 @@
 // wasm_bindgen is the bridge between Rust and JavaScript.
 // The #[wasm_bindgen] attribute marks functions that JS can call.
 use wasm_bindgen::prelude::*;
+use std::collections::HashSet;
 
 /// Converts RGBA pixels to single-channel greyscale using luminance weights.
 /// Input: &[u8] of RGBA pixels (4 bytes per pixel).
@@ -173,6 +174,107 @@ fn compute_cost_matrix(grad: &[u8], width: u32, height: u32, orientation: &str) 
     cm
 }
 
+/// Finds the lowest-energy seam by building the cost matrix, then backtracking
+/// from the minimum-cost cell on the terminal edge.
+/// Returns seam points from terminal edge back to base edge.
+fn find_seam(grad: &[u8], width: u32, height: u32, orientation: &str) -> Vec<(u32, u32)> {
+    let w = width as usize;
+    let h = height as usize;
+    let cm = compute_cost_matrix(grad, width, height, orientation);
+    let idx = |x: usize, y: usize| -> usize { x * h + y };
+
+    // Find minimum cost on the terminal edge
+    // Tie-breaking matches TS: strict <, equal prefers later index
+    let (mut x, mut y) = if orientation == "vertical" {
+        // Bottom edge: y = h-1
+        (0..w)
+            .map(|x| (x, h - 1, cm[idx(x, h - 1)].cost))
+            .reduce(|a, b| if a.2 < b.2 { a } else { b })
+            .map(|(x, y, _)| (x, y))
+            .unwrap()
+    } else {
+        // Right edge: x = w-1
+        (0..h)
+            .map(|y| (w - 1, y, cm[idx(w - 1, y)].cost))
+            .reduce(|a, b| if a.2 < b.2 { a } else { b })
+            .map(|(x, y, _)| (x, y))
+            .unwrap()
+    };
+
+    // Backtrack from terminal edge to base edge
+    let steps = if orientation == "vertical" { h } else { w };
+    let mut seam = Vec::with_capacity(steps);
+    let mut pos = steps - 1;
+    while pos > 0 {
+        seam.push((x as u32, y as u32));
+        // .unwrap() is safe: non-base cells always have a min_neighbor
+        let (nx, ny) = cm[idx(x, y)].min_neighbor.unwrap();
+        x = nx as usize;
+        y = ny as usize;
+        pos -= 1;
+    }
+    seam.push((x as u32, y as u32));
+    seam
+}
+
+/// Removes a seam from the data, returning a buffer one pixel narrower or shorter.
+/// Works with any channel count: 4 for RGBA pixels, 1 for single-channel gradient.
+/// Like memcpy-ing rows/columns while skipping the seam pixel each time.
+fn rip_seam(
+    data: &[u8],
+    width: u32,
+    height: u32,
+    seam: &[(u32, u32)],
+    orientation: &str,
+    channels: usize,
+) -> Vec<u8> {
+    let w = width as usize;
+    let h = height as usize;
+    // Build a set of flat pixel indices to skip (like the TS Set)
+    let seam_set: HashSet<usize> = seam
+        .iter()
+        .map(|&(sx, sy)| sy as usize * w + sx as usize)
+        .collect();
+
+    let (new_w, new_h) = if orientation == "vertical" {
+        (w - 1, h)
+    } else {
+        (w, h - 1)
+    };
+    let mut result = vec![0u8; new_w * new_h * channels];
+
+    if orientation == "vertical" {
+        // Row by row: copy all pixels except the seam pixel
+        for y in 0..h {
+            let mut tgt_x = 0;
+            for x in 0..w {
+                if seam_set.contains(&(y * w + x)) {
+                    continue;
+                }
+                let src = (y * w + x) * channels;
+                let dst = (y * new_w + tgt_x) * channels;
+                result[dst..dst + channels].copy_from_slice(&data[src..src + channels]);
+                tgt_x += 1;
+            }
+        }
+    } else {
+        // Column by column: copy all pixels except the seam pixel
+        for x in 0..w {
+            let mut tgt_y = 0;
+            for y in 0..h {
+                if seam_set.contains(&(y * w + x)) {
+                    continue;
+                }
+                let src = (y * w + x) * channels;
+                let dst = (tgt_y * new_w + x) * channels;
+                result[dst..dst + channels].copy_from_slice(&data[src..src + channels]);
+                tgt_y += 1;
+            }
+        }
+    }
+    result
+}
+
 /// One cell in the cumulative cost matrix.
 /// `cost`: cumulative energy cost to reach this pixel along the minimum-cost path.
 /// `min_neighbor`: (x, y) of the predecessor cell, or None for the base edge.
@@ -264,5 +366,44 @@ mod tests {
         assert_eq!(cm[1 * 4 + 2], CostCell { cost: 137, min_neighbor: Some((0, 3)) }); // (1,2)
         assert_eq!(cm[3 * 4 + 1], CostCell { cost: 252, min_neighbor: Some((2, 0)) }); // (3,1)
         assert_eq!(cm[3 * 4 + 3], CostCell { cost: 0, min_neighbor: Some((2, 3)) }); // (3,3)
+    }
+
+    #[test]
+    fn test_find_seam_vertical() {
+        let result = find_seam(&SOBEL_GRAD, 4, 4, "vertical");
+        let expected: Vec<(u32, u32)> = vec![(3, 3), (3, 2), (2, 1), (3, 0)];
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_find_seam_horizontal() {
+        let result = find_seam(&SOBEL_GRAD, 4, 4, "horizontal");
+        let expected: Vec<(u32, u32)> = vec![(3, 3), (2, 3), (1, 3), (0, 3)];
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_rip_seam_vertical() {
+        let seam: Vec<(u32, u32)> = vec![(2, 3), (3, 2), (2, 1), (3, 0)];
+        let result = rip_seam(&TEST_PIXELS, 4, 4, &seam, "vertical", 4);
+        let expected: Vec<u8> = vec![
+            238, 226, 86, 255, 255, 252, 96, 255, 255, 255, 109, 255,
+            84, 83, 58, 255, 131, 131, 80, 255, 196, 193, 68, 255,
+            73, 75, 77, 255, 68, 69, 76, 255, 41, 43, 55, 255,
+            28, 28, 26, 255, 28, 29, 25, 255, 159, 138, 26, 255,
+        ];
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_rip_seam_horizontal() {
+        let seam: Vec<(u32, u32)> = vec![(3, 0), (2, 0), (1, 0), (0, 1)];
+        let result = rip_seam(&TEST_PIXELS, 4, 4, &seam, "horizontal", 4);
+        let expected: Vec<u8> = vec![
+            238, 226, 86, 255, 131, 131, 80, 255, 151, 150, 76, 255, 196, 193, 68, 255,
+            73, 75, 77, 255, 68, 69, 76, 255, 41, 43, 55, 255, 30, 25, 17, 255,
+            28, 28, 26, 255, 28, 29, 25, 255, 0, 0, 17, 255, 159, 138, 26, 255,
+        ];
+        assert_eq!(result, expected);
     }
 }
