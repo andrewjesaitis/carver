@@ -275,6 +275,60 @@ fn rip_seam(
     result
 }
 
+/// Internal resize that returns (pixels, final_width, final_height) for testability.
+fn resize_inner(
+    pixels: &[u8],
+    width: u32,
+    height: u32,
+    derivative: &str,
+    target_width: u32,
+    target_height: u32,
+) -> (Vec<u8>, u32, u32) {
+    let mut img = pixels.to_vec(); // clone the input
+    let mut w = width;
+    let mut h = height;
+
+    // Compute gradient once, then rip it alongside the image each iteration
+    let grey = greyscale(pixels, w, h);
+    let mut grad = match derivative {
+        "simple" => simple_gradient(&grey, w, h),
+        _ => sobel_gradient(&grey, w, h), // default to sobel, like TS
+    };
+
+    // Remove vertical seams until target width
+    while w > target_width {
+        let seam = find_seam(&grad, w, h, "vertical");
+        img = rip_seam(&img, w, h, &seam, "vertical", 4);
+        grad = rip_seam(&grad, w, h, &seam, "vertical", 1);
+        w -= 1;
+    }
+
+    // Remove horizontal seams until target height
+    while h > target_height {
+        let seam = find_seam(&grad, w, h, "horizontal");
+        img = rip_seam(&img, w, h, &seam, "horizontal", 4);
+        grad = rip_seam(&grad, w, h, &seam, "horizontal", 1);
+        h -= 1;
+    }
+
+    (img, w, h)
+}
+
+/// Public entry point callable from JavaScript via wasm-bindgen.
+/// Takes RGBA pixels as a Uint8Array, returns resized RGBA pixels as a Uint8Array.
+/// JS computes output dimensions as min(input, target) for each axis.
+#[wasm_bindgen]
+pub fn resize(
+    pixels: &[u8],
+    width: u32,
+    height: u32,
+    derivative: &str,
+    target_width: u32,
+    target_height: u32,
+) -> Vec<u8> {
+    resize_inner(pixels, width, height, derivative, target_width, target_height).0
+}
+
 /// One cell in the cumulative cost matrix.
 /// `cost`: cumulative energy cost to reach this pixel along the minimum-cost path.
 /// `min_neighbor`: (x, y) of the predecessor cell, or None for the base edge.
@@ -405,5 +459,32 @@ mod tests {
             28, 28, 26, 255, 28, 29, 25, 255, 0, 0, 17, 255, 159, 138, 26, 255,
         ];
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_resize_vertical() {
+        // Resize 4×4 → 3×4 (remove 1 vertical seam)
+        let (result, rw, rh) = resize_inner(&TEST_PIXELS, 4, 4, "sobel", 3, 4);
+        assert_eq!(rw, 3);
+        assert_eq!(rh, 4);
+        assert_eq!(result.len(), 3 * 4 * 4); // 3×4 pixels × 4 channels
+    }
+
+    #[test]
+    fn test_resize_noop_when_at_target() {
+        // Target equals input — should return identical data
+        let (result, rw, rh) = resize_inner(&TEST_PIXELS, 4, 4, "sobel", 4, 4);
+        assert_eq!(rw, 4);
+        assert_eq!(rh, 4);
+        assert_eq!(result, TEST_PIXELS.to_vec());
+    }
+
+    #[test]
+    fn test_resize_both_dimensions() {
+        // Resize 4×4 → 3×3 (remove seams in both directions)
+        let (result, rw, rh) = resize_inner(&TEST_PIXELS, 4, 4, "sobel", 3, 3);
+        assert_eq!(rw, 3);
+        assert_eq!(rh, 3);
+        assert_eq!(result.len(), 3 * 3 * 4);
     }
 }
