@@ -101,6 +101,87 @@ fn sobel_gradient(grey: &[u8], width: u32, height: u32) -> Vec<u8> {
     grad
 }
 
+/// Builds a cumulative cost matrix via dynamic programming.
+/// Vertical: costs accumulate top→bottom. Horizontal: costs accumulate left→right.
+/// Stored flat in column-major order: index = x * height + y.
+fn compute_cost_matrix(grad: &[u8], width: u32, height: u32, orientation: &str) -> Vec<CostCell> {
+    let w = width as usize;
+    let h = height as usize;
+    let mut cm: Vec<CostCell> = vec![CostCell { cost: 255, min_neighbor: None }; w * h];
+
+    // Column-major index, matching TS costMatrix[x][y]
+    let idx = |x: usize, y: usize| -> usize { x * h + y };
+    // Row-major gradient access
+    let grad_at = |x: usize, y: usize| -> u32 { grad[y * w + x] as u32 };
+
+    // Find the minimum-cost neighbor for cell (x, y).
+    // Tie-breaking: strict < means equal costs prefer the last candidate (matches TS).
+    let get_min_neighbor =
+        |x: usize, y: usize, cm: &[CostCell]| -> Option<(u32, u32)> {
+            let mut candidates: Vec<(u32, u32, u32)> = Vec::new(); // (nx, ny, cost)
+            if orientation == "vertical" {
+                if y == 0 {
+                    return None;
+                }
+                if x > 0 {
+                    candidates.push((x as u32 - 1, y as u32 - 1, cm[idx(x - 1, y - 1)].cost));
+                }
+                candidates.push((x as u32, y as u32 - 1, cm[idx(x, y - 1)].cost));
+                if x < w - 1 {
+                    candidates.push((x as u32 + 1, y as u32 - 1, cm[idx(x + 1, y - 1)].cost));
+                }
+            } else {
+                if x == 0 {
+                    return None;
+                }
+                if y > 0 {
+                    candidates.push((x as u32 - 1, y as u32 - 1, cm[idx(x - 1, y - 1)].cost));
+                }
+                candidates.push((x as u32 - 1, y as u32, cm[idx(x - 1, y)].cost));
+                if y < h - 1 {
+                    candidates.push((x as u32 - 1, y as u32 + 1, cm[idx(x - 1, y + 1)].cost));
+                }
+            }
+            // reduce: a.2 < b.2 ? a : b — equal costs pick b (later/rightward/downward)
+            candidates
+                .into_iter()
+                .reduce(|a, b| if a.2 < b.2 { a } else { b })
+                .map(|(nx, ny, _)| (nx, ny))
+        };
+
+    if orientation == "vertical" {
+        // Row by row, top to bottom
+        for y in 0..h {
+            for x in 0..w {
+                let g = grad_at(x, y);
+                let mn = get_min_neighbor(x, y, &cm);
+                let cost = g + mn.map_or(0, |(nx, ny)| cm[idx(nx as usize, ny as usize)].cost);
+                cm[idx(x, y)] = CostCell { cost, min_neighbor: mn };
+            }
+        }
+    } else {
+        // Column by column, left to right
+        for x in 0..w {
+            for y in 0..h {
+                let g = grad_at(x, y);
+                let mn = get_min_neighbor(x, y, &cm);
+                let cost = g + mn.map_or(0, |(nx, ny)| cm[idx(nx as usize, ny as usize)].cost);
+                cm[idx(x, y)] = CostCell { cost, min_neighbor: mn };
+            }
+        }
+    }
+    cm
+}
+
+/// One cell in the cumulative cost matrix.
+/// `cost`: cumulative energy cost to reach this pixel along the minimum-cost path.
+/// `min_neighbor`: (x, y) of the predecessor cell, or None for the base edge.
+#[derive(Debug, Clone, PartialEq)]
+struct CostCell {
+    cost: u32,
+    min_neighbor: Option<(u32, u32)>,
+}
+
 // The test fixture from src/algorithm/carver.test.ts — a 4×4 RGBA image.
 #[cfg(test)]
 mod tests {
@@ -151,5 +232,37 @@ mod tests {
             0, 0, 0, 0,
         ];
         assert_eq!(result, expected);
+    }
+
+    // Sobel gradient as single-channel — used as input for cost matrix and seam tests
+    const SOBEL_GRAD: [u8; 16] = [
+        0, 0, 0, 0,
+        0, 190, 32, 252,
+        35, 137, 186, 0,
+        0, 0, 0, 0,
+    ];
+
+    #[test]
+    fn test_compute_cost_matrix_vertical() {
+        let cm = compute_cost_matrix(&SOBEL_GRAD, 4, 4, "vertical");
+        // Spot-check key cells (column-major: index = x * h + y)
+        assert_eq!(cm[0 * 4 + 0], CostCell { cost: 0, min_neighbor: None }); // (0,0)
+        assert_eq!(cm[0 * 4 + 1], CostCell { cost: 0, min_neighbor: Some((1, 0)) }); // (0,1)
+        assert_eq!(cm[0 * 4 + 2], CostCell { cost: 35, min_neighbor: Some((0, 1)) }); // (0,2)
+        assert_eq!(cm[1 * 4 + 1], CostCell { cost: 190, min_neighbor: Some((2, 0)) }); // (1,1)
+        assert_eq!(cm[2 * 4 + 1], CostCell { cost: 32, min_neighbor: Some((3, 0)) }); // (2,1)
+        assert_eq!(cm[3 * 4 + 2], CostCell { cost: 32, min_neighbor: Some((2, 1)) }); // (3,2)
+        assert_eq!(cm[3 * 4 + 3], CostCell { cost: 32, min_neighbor: Some((3, 2)) }); // (3,3)
+    }
+
+    #[test]
+    fn test_compute_cost_matrix_horizontal() {
+        let cm = compute_cost_matrix(&SOBEL_GRAD, 4, 4, "horizontal");
+        assert_eq!(cm[0 * 4 + 0], CostCell { cost: 0, min_neighbor: None }); // (0,0)
+        assert_eq!(cm[0 * 4 + 2], CostCell { cost: 35, min_neighbor: None }); // (0,2)
+        assert_eq!(cm[1 * 4 + 0], CostCell { cost: 0, min_neighbor: Some((0, 1)) }); // (1,0)
+        assert_eq!(cm[1 * 4 + 2], CostCell { cost: 137, min_neighbor: Some((0, 3)) }); // (1,2)
+        assert_eq!(cm[3 * 4 + 1], CostCell { cost: 252, min_neighbor: Some((2, 0)) }); // (3,1)
+        assert_eq!(cm[3 * 4 + 3], CostCell { cost: 0, min_neighbor: Some((2, 3)) }); // (3,3)
     }
 }
