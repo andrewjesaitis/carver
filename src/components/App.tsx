@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import type { Derivative, ResizeResponse, ResizeError } from '../types';
+import type { Derivative, Engine, ResizeResponse, ResizeError, WasmStatus } from '../types';
 import Canvas from './Canvas';
 import Controls from './Controls';
 import '../app.css';
@@ -11,6 +11,9 @@ interface AppState {
   targetWidth: number;
   targetHeight: number;
   derivative: Derivative;
+  engine: Engine;
+  wasmAvailable: boolean;
+  elapsed: number | null;
 }
 
 /** Loads a File into an ImageData by drawing it onto an offscreen canvas. */
@@ -48,17 +51,26 @@ export default function App() {
     targetWidth: 0,
     targetHeight: 0,
     derivative: 'sobel',
+    engine: 'ts',
+    wasmAvailable: false,
+    elapsed: null,
   });
 
   useEffect(() => {
     const worker = new Worker(new URL('../worker/carver.worker.ts', import.meta.url), {
       type: 'module',
     });
-    worker.onmessage = (event: MessageEvent<ResizeResponse | ResizeError>) => {
+    worker.onmessage = (event: MessageEvent<ResizeResponse | ResizeError | WasmStatus>) => {
       const msg = event.data;
-      if (msg.type === 'RESIZE') {
+      if (msg.type === 'WASM_STATUS') {
+        setState((prev) => ({
+          ...prev,
+          wasmAvailable: msg.available,
+          engine: msg.available ? 'wasm' : 'ts',
+        }));
+      } else if (msg.type === 'RESIZE') {
         const imageData = new ImageData(new Uint8ClampedArray(msg.buffer), msg.width, msg.height);
-        setState((prev) => ({ ...prev, imageData, status: 'idle' }));
+        setState((prev) => ({ ...prev, imageData, status: 'idle', elapsed: msg.elapsed }));
       } else {
         setState((prev) => ({
           ...prev,
@@ -85,10 +97,10 @@ export default function App() {
   }, []);
 
   const handleResize = useCallback(() => {
-    const { imageData, derivative, targetWidth, targetHeight } = state;
+    const { imageData, derivative, targetWidth, targetHeight, engine } = state;
     if (!imageData || !workerRef.current) return;
     const buffer = imageData.data.buffer;
-    setState((prev) => ({ ...prev, imageData: null, status: 'processing' }));
+    setState((prev) => ({ ...prev, imageData: null, status: 'processing', elapsed: null }));
     workerRef.current.postMessage(
       {
         type: 'RESIZE',
@@ -98,6 +110,7 @@ export default function App() {
         derivative,
         targetWidth,
         targetHeight,
+        engine,
       },
       [buffer],
     );
@@ -122,11 +135,15 @@ export default function App() {
         targetWidth={state.targetWidth}
         targetHeight={state.targetHeight}
         derivative={state.derivative}
+        engine={state.engine}
+        wasmAvailable={state.wasmAvailable}
+        elapsed={state.elapsed}
         status={state.status}
         onUpload={handleUpload}
         onTargetWidthChange={(w) => setState((prev) => ({ ...prev, targetWidth: w }))}
         onTargetHeightChange={(h) => setState((prev) => ({ ...prev, targetHeight: h }))}
         onDerivativeChange={(d) => setState((prev) => ({ ...prev, derivative: d }))}
+        onEngineChange={(e) => setState((prev) => ({ ...prev, engine: e }))}
         onResize={handleResize}
         onDownload={handleDownload}
       />

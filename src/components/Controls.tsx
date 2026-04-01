@@ -1,16 +1,20 @@
 import React from 'react';
-import type { Derivative } from '../types';
+import type { Derivative, Engine } from '../types';
 
 interface ControlsProps {
   imageData: ImageData | null;
   targetWidth: number;
   targetHeight: number;
   derivative: Derivative;
+  engine: Engine;
+  wasmAvailable: boolean;
+  elapsed: number | null;
   status: 'idle' | 'processing' | 'error';
   onUpload: (file: File) => void;
   onTargetWidthChange: (w: number) => void;
   onTargetHeightChange: (h: number) => void;
   onDerivativeChange: (d: Derivative) => void;
+  onEngineChange: (e: Engine) => void;
   onResize: () => void;
   onDownload: () => void;
 }
@@ -35,11 +39,15 @@ export default function Controls({
   targetWidth,
   targetHeight,
   derivative,
+  engine,
+  wasmAvailable,
+  elapsed,
   status,
   onUpload,
   onTargetWidthChange,
   onTargetHeightChange,
   onDerivativeChange,
+  onEngineChange,
   onResize,
   onDownload,
 }: ControlsProps) {
@@ -96,6 +104,21 @@ export default function Controls({
       </div>
 
       <div className="control-group">
+        <label>
+          Engine
+          <select
+            value={engine}
+            onChange={(e) => onEngineChange(e.target.value as Engine)}
+          >
+            <option value="ts">TypeScript</option>
+            <option value="wasm" disabled={!wasmAvailable}>
+              WASM{!wasmAvailable ? ' (unavailable)' : ''}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <div className="control-group">
         <button
           onClick={onResize}
           disabled={isResizeDisabled(status, imageData, targetWidth, targetHeight)}
@@ -109,6 +132,10 @@ export default function Controls({
 
       {status === 'error' && (
         <p className="error">Something went wrong. Try a different image or dimensions.</p>
+      )}
+
+      {elapsed !== null && status === 'idle' && (
+        <p className="elapsed">Carved in {elapsed}ms</p>
       )}
     </div>
   );
