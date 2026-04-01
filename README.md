@@ -1,6 +1,6 @@
 # carver
 
-![Carver](https://raw.githubusercontent.com/andrewjesaitis/carver/master/app/images/towerSobelHorz.png "Carver")
+![Carver](https://raw.githubusercontent.com/andrewjesaitis/carver/master/towerSobelHorz.png "Carver")
 
 ### Description
 
