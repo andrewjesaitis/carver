@@ -61,6 +61,14 @@ export default function App() {
     const worker = new Worker(new URL('../worker/carver.worker.ts', import.meta.url), {
       type: 'module',
     });
+    worker.onerror = (event) => {
+      console.error('[carver] worker error:', event.message, event);
+      setState((prev) => ({
+        ...prev,
+        status: 'error',
+        errorMessage: event.message || 'Worker crashed unexpectedly.',
+      }));
+    };
     worker.onmessage = (event: MessageEvent<ResizeResponse | ResizeError | WasmStatus>) => {
       const msg = event.data;
       if (msg.type === 'WASM_STATUS') {

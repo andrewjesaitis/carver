@@ -17,7 +17,8 @@ init(wasmUrl)
     wasmReady = true;
     self.postMessage({ type: 'WASM_STATUS', available: true } satisfies WasmStatus);
   })
-  .catch(() => {
+  .catch((err) => {
+    console.error('[carver-worker] WASM init failed:', err);
     self.postMessage({ type: 'WASM_STATUS', available: false } satisfies WasmStatus);
   });
 
@@ -55,6 +56,11 @@ self.onmessage = (event: MessageEvent<ResizeRequest>) => {
     };
     self.postMessage(response, [response.buffer]);
   } catch (err) {
+    const { engine, width, height, targetWidth, targetHeight } = event.data;
+    console.error(
+      `[carver-worker] resize failed engine=${engine} ${width}x${height}->${targetWidth}x${targetHeight}:`,
+      err,
+    );
     const error: ResizeError = {
       type: 'RESIZE_ERROR',
       message: err instanceof Error ? err.message : String(err),
