@@ -54,4 +54,12 @@ describe('cross-engine consistency', () => {
 
     expect(wasmResult).toEqual(new Uint8Array(tsResult.data.buffer));
   });
+
+  test('WASM and TS produce identical output for sobel 4x4 → 4x3 (horizontal-only)', () => {
+    const input = new ImageData(testPixels.slice(), 4, 4);
+    const tsResult = tsResize(input, 'sobel', 4, 3);
+    const wasmResult = wasmResize(new Uint8Array(testPixels), 4, 4, 'sobel', 4, 3);
+
+    expect(wasmResult).toEqual(new Uint8Array(tsResult.data.buffer));
+  });
 });
