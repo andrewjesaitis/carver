@@ -51,8 +51,7 @@ export default function App() {
     targetWidth: 0,
     targetHeight: 0,
     derivative: 'sobel',
-    // Optimistically default to wasm; WASM_STATUS downgrades to 'ts' if unavailable.
-    // Worker falls back to TS safely if a resize is requested before init completes.
+    // Optimistic default: worker falls back to TS if a resize fires before init completes.
     engine: 'wasm',
     wasmAvailable: false,
     elapsed: null,
@@ -68,8 +67,7 @@ export default function App() {
         setState((prev) => ({
           ...prev,
           wasmAvailable: msg.available,
-          // Default to wasm on first availability; if unavailable, force off wasm.
-          // Otherwise preserve whatever the user has selected.
+          // Preserve user's selection; force 'ts' only when WASM is unavailable.
           engine: msg.available ? prev.engine : 'ts',
         }));
       } else if (msg.type === 'RESIZE') {

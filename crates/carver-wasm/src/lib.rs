@@ -16,13 +16,13 @@ fn greyscale(pixels: &[u8], width: u32, height: u32) -> Vec<u8> {
         let r = pixels[base] as f64;
         let g = pixels[base + 1] as f64;
         let b = pixels[base + 2] as f64;
-        // Same luminance weights as the TS version
+        // Standard weights used for greyscale conversion
         grey.push((0.21 * r + 0.72 * g + 0.07 * b).round() as u8);
     }
     grey
 }
 
-/// Computes gradient magnitude using forward differences, matching the TS simpleGradient.
+/// Computes gradient magnitude using forward differences.
 /// Boundary: left column (x=0) and top row (y=0) are treated as zero-gradient.
 fn simple_gradient(grey: &[u8], width: u32, height: u32) -> Vec<u8> {
     let w = width as usize;
@@ -116,7 +116,7 @@ fn compute_cost_matrix(grad: &[u8], width: u32, height: u32, orientation: &str) 
     let grad_at = |x: usize, y: usize| -> u32 { grad[y * w + x] as u32 };
 
     // Find the minimum-cost neighbor for cell (x, y).
-    // Tie-breaking: strict < means equal costs prefer the last candidate (matches TS).
+    // Tie-breaking: strict < means equal costs prefer the last candidate
     let get_min_neighbor =
         |x: usize, y: usize, cm: &[CostCell]| -> Option<(u32, u32)> {
             let mut candidates: Vec<(u32, u32, u32)> = Vec::new(); // (nx, ny, cost)
@@ -338,7 +338,7 @@ struct CostCell {
     min_neighbor: Option<(u32, u32)>,
 }
 
-// The test fixture from src/algorithm/carver.test.ts — a 4×4 RGBA image.
+// from src/algorithm/carver.test.ts — a 4×4 RGBA image.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -363,7 +363,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    // Expected single-channel gradient values extracted from the TS test's RGBA output
+    // Expected single-channel gradient values
     #[test]
     fn test_simple_gradient() {
         let grey = greyscale(&TEST_PIXELS, 4, 4);
