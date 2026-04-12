@@ -89,6 +89,12 @@ button:not(:disabled):hover {
   width: 100%;
 }
 
+.elapsed {
+  font-size: 0.85rem;
+  color: #666;
+  align-self: center;
+}
+
 canvas {
   display: block;
 }

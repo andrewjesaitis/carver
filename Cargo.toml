@@ -1,0 +1,4 @@
+# Workspace root — lets `cargo build -p carver-wasm` work from the project root
+[workspace]
+members = ["crates/carver-wasm"]
+resolver = "2"

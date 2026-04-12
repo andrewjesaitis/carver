@@ -1,0 +1,12 @@
+[package]
+name = "carver-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+# cdylib: produces a .wasm file for wasm-bindgen (like a .so in C)
+# rlib: Rust's default static library format, needed so `cargo test` can link against this crate
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"

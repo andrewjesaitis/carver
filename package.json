@@ -4,9 +4,13 @@
   "description": "Seam carving web app",
   "type": "module",
   "scripts": {
+    "predev": "npm run build:wasm",
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:wasm && vite build",
+    "build:wasm": "cargo build --target wasm32-unknown-unknown --release -p carver-wasm && wasm-bindgen target/wasm32-unknown-unknown/release/carver_wasm.wasm --out-dir src/wasm/pkg --target web --typescript",
+    "pretest": "npm run build:wasm",
     "test": "vitest",
+    "test:rust": "cargo test -p carver-wasm",
     "lint": "oxlint src",
     "fmt": "oxfmt src",
     "fmt:check": "oxfmt --check src"

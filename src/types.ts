@@ -1,5 +1,6 @@
 export type Orientation = 'vertical' | 'horizontal';
 export type Derivative = 'simple' | 'sobel';
+export type Engine = 'ts' | 'wasm';
 
 export interface SeamPoint {
   x: number;
@@ -22,6 +23,7 @@ export interface ResizeRequest {
   derivative: Derivative;
   targetWidth: number;
   targetHeight: number;
+  engine: Engine;
 }
 
 export interface ResizeResponse {
@@ -29,9 +31,15 @@ export interface ResizeResponse {
   buffer: ArrayBuffer;
   width: number;
   height: number;
+  elapsed: number;
 }
 
 export interface ResizeError {
   type: 'RESIZE_ERROR';
   message: string;
+}
+
+export interface WasmStatus {
+  type: 'WASM_STATUS';
+  available: boolean;
 }
