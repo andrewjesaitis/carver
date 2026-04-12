@@ -51,7 +51,9 @@ export default function App() {
     targetWidth: 0,
     targetHeight: 0,
     derivative: 'sobel',
-    engine: 'ts',
+    // Optimistically default to wasm; WASM_STATUS downgrades to 'ts' if unavailable.
+    // Worker falls back to TS safely if a resize is requested before init completes.
+    engine: 'wasm',
     wasmAvailable: false,
     elapsed: null,
   });
@@ -66,7 +68,9 @@ export default function App() {
         setState((prev) => ({
           ...prev,
           wasmAvailable: msg.available,
-          engine: msg.available ? 'wasm' : 'ts',
+          // Default to wasm on first availability; if unavailable, force off wasm.
+          // Otherwise preserve whatever the user has selected.
+          engine: msg.available ? prev.engine : 'ts',
         }));
       } else if (msg.type === 'RESIZE') {
         const imageData = new ImageData(new Uint8ClampedArray(msg.buffer), msg.width, msg.height);
