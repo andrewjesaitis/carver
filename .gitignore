@@ -2,6 +2,7 @@ node_modules
 .tmp
 ./bower_components
 .claude/
+.superpowers/
 .gitattributes
 .tern-port
 package-lock.json
