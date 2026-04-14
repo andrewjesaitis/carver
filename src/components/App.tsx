@@ -168,6 +168,27 @@ export default function App() {
   const displayedImageData =
     state.activeTab === 'carved' ? state.carvedImageData : state.imageData;
 
+  // The canvas-area wrapper is sized to the SOURCE image's native dimensions
+  // (capped to container width). The canvas inside is rendered as a percentage
+  // of the wrapper based on how large the displayed bitmap is relative to the
+  // source — so the Original fills the wrapper exactly (no whitespace) and the
+  // Carved result visibly occupies less of the same fixed area.
+  const canvasAreaStyle: React.CSSProperties | undefined = state.imageData
+    ? {
+        width: '100%',
+        maxWidth: `${state.imageData.width}px`,
+        aspectRatio: `${state.imageData.width} / ${state.imageData.height}`,
+      }
+    : undefined;
+
+  const canvasStyle: React.CSSProperties | undefined =
+    state.imageData && displayedImageData
+      ? {
+          width: `${(displayedImageData.width / state.imageData.width) * 100}%`,
+          height: `${(displayedImageData.height / state.imageData.height) * 100}%`,
+        }
+      : undefined;
+
   return (
     <div className="app">
       <Masthead />
@@ -199,7 +220,9 @@ export default function App() {
         }
         onTabChange={(tab) => dispatch({ type: 'TAB_CHANGED', tab })}
       />
-      <Canvas imageData={displayedImageData} canvasRef={canvasRef} />
+      <div className="canvas-area" style={canvasAreaStyle}>
+        <Canvas imageData={displayedImageData} canvasRef={canvasRef} style={canvasStyle} />
+      </div>
       <TimingPanel runs={state.runs} wasmAvailable={state.wasmAvailable} />
       <Explainer />
     </div>

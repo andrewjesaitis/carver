@@ -142,15 +142,21 @@ body {
   color: var(--accent-fg);
 }
 
-/* Canvas */
+/* Canvas area — sized via inline style to the SOURCE image's natural
+   dimensions (capped at container width). The dotted outline traces the
+   original-size footprint so the Carved image reads as "what used to be here";
+   on the Original tab it hugs the image edges like a ghost frame. The tab
+   above connects at the top-left (square corner); the other corners are
+   rounded to match the tab's own radius. */
+.canvas-area {
+  margin-bottom: 22px;
+  border: 2px dotted var(--fg-muted);
+  border-radius: 0 3px 3px 3px;
+  overflow: hidden;
+}
 .canvas {
   display: block;
-  width: 100%;
-  max-width: 100%;
-  height: auto;
   background: var(--surface-alt);
-  border-radius: 0 3px 3px 3px;
-  margin-bottom: 22px;
 }
 
 /* Timing panel */
