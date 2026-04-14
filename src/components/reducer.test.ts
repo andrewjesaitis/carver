@@ -154,6 +154,28 @@ describe('WORKER_RESPONSE', () => {
     });
     expect(next.carvedImageData).toBe(tsImg);
   });
+
+  test('TS response DOES render when WASM errored at runtime', () => {
+    const tsImg = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      wasmAvailable: true,
+      wasmStatusKnown: true,
+      carvedImageData: null,
+      runs: {
+        wasm: { status: 'error', elapsedMs: null, tickerMs: null, errorMessage: 'trap' },
+        ts: running,
+      },
+    };
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'ts',
+      elapsedMs: 420,
+      imageData: tsImg,
+    });
+    expect(next.carvedImageData).toBe(tsImg);
+    expect(next.runs.ts.status).toBe('done');
+  });
 });
 
 describe('WORKER_ERROR', () => {

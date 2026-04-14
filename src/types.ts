@@ -44,8 +44,6 @@ export interface WasmStatus {
   available: boolean;
 }
 
-export type EngineKey = 'ts' | 'wasm';
-
 export interface EngineRunState {
   status: 'idle' | 'running' | 'done' | 'error' | 'unavailable';
   elapsedMs: number | null;

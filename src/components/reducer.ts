@@ -1,4 +1,4 @@
-import type { Derivative, EngineKey, EngineRuns, EngineRunState } from '../types';
+import type { Derivative, Engine, EngineRuns, EngineRunState } from '../types';
 
 export type SampleKey = 'balloon' | 'tower' | 'upload';
 
@@ -22,14 +22,14 @@ export type Action =
   | { type: 'DERIVATIVE_CHANGED'; value: Derivative }
   | { type: 'TAB_CHANGED'; tab: 'original' | 'carved' }
   | { type: 'CARVE_STARTED' }
-  | { type: 'TICK'; engine: EngineKey; elapsed: number }
+  | { type: 'TICK'; engine: Engine; elapsed: number }
   | {
       type: 'WORKER_RESPONSE';
-      engine: EngineKey;
+      engine: Engine;
       elapsedMs: number;
       imageData: ImageData;
     }
-  | { type: 'WORKER_ERROR'; engine: EngineKey; message: string }
+  | { type: 'WORKER_ERROR'; engine: Engine; message: string }
   | { type: 'WASM_STATUS'; available: boolean };
 
 const idleEngineRun: EngineRunState = {
@@ -101,8 +101,13 @@ export function reducer(state: UiState, action: Action): UiState {
         tickerMs: null,
         errorMessage: null,
       };
+      // WASM's result is preferred whenever it lands. TS's result renders only
+      // when WASM is NOT producing a successful one — either it never ran
+      // ('unavailable') or it errored at runtime ('error'). Checking runtime
+      // status rather than init-time `wasmAvailable` ensures a successful TS
+      // run still displays when WASM failed mid-carve.
       const useThisResult =
-        action.engine === 'wasm' || (action.engine === 'ts' && !state.wasmAvailable);
+        action.engine === 'wasm' || state.runs.wasm.status !== 'done';
       return {
         ...state,
         carvedImageData: useThisResult ? action.imageData : state.carvedImageData,
