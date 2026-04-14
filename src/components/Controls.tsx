@@ -1,142 +1,99 @@
 import React from 'react';
-import type { Derivative, Engine } from '../types';
+import type { Derivative, EngineRuns } from '../types';
+import type { SampleKey } from './reducer';
+import SamplePicker from './SamplePicker';
 
-interface ControlsProps {
+interface Props {
   imageData: ImageData | null;
+  sampleKey: SampleKey;
   targetWidth: number;
   targetHeight: number;
   derivative: Derivative;
-  engine: Engine;
-  wasmAvailable: boolean;
-  elapsed: number | null;
-  status: 'idle' | 'processing' | 'error';
+  wasmStatusKnown: boolean;
+  runs: EngineRuns;
+  onSample: (key: 'balloon' | 'tower') => void;
   onUpload: (file: File) => void;
   onTargetWidthChange: (w: number) => void;
   onTargetHeightChange: (h: number) => void;
   onDerivativeChange: (d: Derivative) => void;
-  onEngineChange: (e: Engine) => void;
-  onResize: () => void;
+  onCarve: () => void;
   onDownload: () => void;
 }
 
-/** Returns true when the Carve button should be disabled. */
-function isResizeDisabled(
-  status: ControlsProps['status'],
-  imageData: ImageData | null,
-  targetWidth: number,
-  targetHeight: number,
-): boolean {
-  if (status === 'processing') return true;
+function isRunning(runs: EngineRuns): boolean {
+  return runs.wasm.status === 'running' || runs.ts.status === 'running';
+}
+
+function isCarveDisabled(props: Props): boolean {
+  const { imageData, targetWidth, targetHeight, wasmStatusKnown, runs } = props;
+  if (!wasmStatusKnown) return true;
   if (!imageData) return true;
+  if (isRunning(runs)) return true;
   if (targetWidth > imageData.width || targetHeight > imageData.height) return true;
   if (targetWidth === imageData.width && targetHeight === imageData.height) return true;
   return false;
 }
 
-/** Upload, dimension, gradient, and action controls for the seam carving workflow. */
-export default function Controls({
-  imageData,
-  targetWidth,
-  targetHeight,
-  derivative,
-  engine,
-  wasmAvailable,
-  elapsed,
-  status,
-  onUpload,
-  onTargetWidthChange,
-  onTargetHeightChange,
-  onDerivativeChange,
-  onEngineChange,
-  onResize,
-  onDownload,
-}: ControlsProps) {
+export default function Controls(props: Props) {
+  const {
+    imageData,
+    sampleKey,
+    targetWidth,
+    targetHeight,
+    derivative,
+    onSample,
+    onUpload,
+    onTargetWidthChange,
+    onTargetHeightChange,
+    onDerivativeChange,
+    onCarve,
+    onDownload,
+  } = props;
+
   return (
     <div className="controls">
-      <div className="control-group">
-        <label>
-          Image
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onUpload(file);
-            }}
-          />
-        </label>
-      </div>
+      <SamplePicker sampleKey={sampleKey} onSample={onSample} onUpload={onUpload} />
 
-      <div className="control-group">
-        <label>
-          Width
-          <input
-            type="number"
-            value={targetWidth}
-            min={1}
-            max={imageData?.width ?? undefined}
-            onChange={(e) => onTargetWidthChange(Number(e.target.value))}
-          />
-        </label>
-        <label>
-          Height
-          <input
-            type="number"
-            value={targetHeight}
-            min={1}
-            max={imageData?.height ?? undefined}
-            onChange={(e) => onTargetHeightChange(Number(e.target.value))}
-          />
-        </label>
-      </div>
+      <label className="control">
+        <span className="control-label">Width</span>
+        <input
+          type="number"
+          value={targetWidth}
+          min={1}
+          max={imageData?.width ?? undefined}
+          onChange={(e) => onTargetWidthChange(Number(e.target.value))}
+        />
+      </label>
 
-      <div className="control-group">
-        <label>
-          Gradient
-          <select
-            value={derivative}
-            onChange={(e) => onDerivativeChange(e.target.value as Derivative)}
-          >
-            <option value="sobel">Sobel</option>
-            <option value="simple">Simple</option>
-          </select>
-        </label>
-      </div>
+      <label className="control">
+        <span className="control-label">Height</span>
+        <input
+          type="number"
+          value={targetHeight}
+          min={1}
+          max={imageData?.height ?? undefined}
+          onChange={(e) => onTargetHeightChange(Number(e.target.value))}
+        />
+      </label>
 
-      <div className="control-group">
-        <label>
-          Engine
-          <select
-            value={engine}
-            onChange={(e) => onEngineChange(e.target.value as Engine)}
-          >
-            <option value="ts">TypeScript</option>
-            <option value="wasm" disabled={!wasmAvailable}>
-              WASM{!wasmAvailable ? ' (unavailable)' : ''}
-            </option>
-          </select>
-        </label>
-      </div>
-
-      <div className="control-group">
-        <button
-          onClick={onResize}
-          disabled={isResizeDisabled(status, imageData, targetWidth, targetHeight)}
+      <label className="control">
+        <span className="control-label">Gradient</span>
+        <select
+          value={derivative}
+          onChange={(e) => onDerivativeChange(e.target.value as Derivative)}
         >
-          {status === 'processing' ? 'Carving…' : 'Carve'}
-        </button>
-        <button onClick={onDownload} disabled={!imageData}>
-          Download
-        </button>
-      </div>
+          <option value="sobel">Sobel</option>
+          <option value="simple">Simple</option>
+        </select>
+      </label>
 
-      {status === 'error' && (
-        <p className="error">Something went wrong. Try a different image or dimensions.</p>
-      )}
+      <button className="btn-primary" onClick={onCarve} disabled={isCarveDisabled(props)}>
+        Carve
+      </button>
 
-      {elapsed !== null && status === 'idle' && (
-        <p className="elapsed">Carved in {elapsed}ms</p>
-      )}
+      <button className="btn-secondary" onClick={onDownload} disabled={!imageData}>
+        Download
+      </button>
     </div>
   );
 }
