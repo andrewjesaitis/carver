@@ -2,6 +2,9 @@ import type { Derivative, Engine, EngineRuns, EngineRunState } from '../types';
 
 export type SampleKey = 'balloon' | 'tower' | 'upload';
 
+/** `'checking'` until the WASM worker's init promise resolves (pass or fail). */
+export type WasmAvailability = 'checking' | 'available' | 'unavailable';
+
 export interface UiState {
   imageData: ImageData | null;
   carvedImageData: ImageData | null;
@@ -10,8 +13,7 @@ export interface UiState {
   targetHeight: number;
   derivative: Derivative;
   sampleKey: SampleKey;
-  wasmStatusKnown: boolean;
-  wasmAvailable: boolean;
+  wasm: WasmAvailability;
   runs: EngineRuns;
 }
 
@@ -47,8 +49,7 @@ export const initialState: UiState = {
   targetHeight: 0,
   derivative: 'sobel',
   sampleKey: 'balloon',
-  wasmStatusKnown: false,
-  wasmAvailable: false,
+  wasm: 'checking',
   runs: { wasm: idleEngineRun, ts: idleEngineRun },
 };
 
@@ -79,7 +80,7 @@ export function reducer(state: UiState, action: Action): UiState {
         carvedImageData: null,
         activeTab: 'carved',
         runs: {
-          wasm: state.wasmAvailable
+          wasm: state.wasm === 'available'
             ? { status: 'running', elapsedMs: null, tickerMs: 0, errorMessage: null }
             : { status: 'unavailable', elapsedMs: null, tickerMs: null, errorMessage: null },
           ts: { status: 'running', elapsedMs: null, tickerMs: 0, errorMessage: null },
@@ -103,9 +104,9 @@ export function reducer(state: UiState, action: Action): UiState {
       };
       // WASM's result is preferred whenever it lands. TS's result renders only
       // when WASM is NOT producing a successful one — either it never ran
-      // ('unavailable') or it errored at runtime ('error'). Checking runtime
-      // status rather than init-time `wasmAvailable` ensures a successful TS
-      // run still displays when WASM failed mid-carve.
+      // ('unavailable') or it errored at runtime ('error'). Checking the
+      // runtime `runs.wasm.status` (not the init-time availability) ensures a
+      // successful TS run still displays when WASM failed mid-carve.
       const useThisResult =
         action.engine === 'wasm' || state.runs.wasm.status !== 'done';
       return {
@@ -128,6 +129,6 @@ export function reducer(state: UiState, action: Action): UiState {
         },
       };
     case 'WASM_STATUS':
-      return { ...state, wasmStatusKnown: true, wasmAvailable: action.available };
+      return { ...state, wasm: action.available ? 'available' : 'unavailable' };
   }
 }

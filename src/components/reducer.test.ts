@@ -19,16 +19,18 @@ const idle = {
 };
 
 describe('WASM_STATUS', () => {
-  test('marks status known and records availability (true)', () => {
+  test('records availability as "available" on init success', () => {
     const next = reducer(initialState, { type: 'WASM_STATUS', available: true });
-    expect(next.wasmStatusKnown).toBe(true);
-    expect(next.wasmAvailable).toBe(true);
+    expect(next.wasm).toBe('available');
   });
 
-  test('marks status known and records availability (false)', () => {
+  test('records availability as "unavailable" on init failure', () => {
     const next = reducer(initialState, { type: 'WASM_STATUS', available: false });
-    expect(next.wasmStatusKnown).toBe(true);
-    expect(next.wasmAvailable).toBe(false);
+    expect(next.wasm).toBe('unavailable');
+  });
+
+  test('initialState starts as "checking"', () => {
+    expect(initialState.wasm).toBe('checking');
   });
 });
 
@@ -53,7 +55,7 @@ describe('IMAGE_LOADED', () => {
 
 describe('CARVE_STARTED', () => {
   test('both engines running when WASM is available', () => {
-    const s: UiState = { ...initialState, wasmAvailable: true, wasmStatusKnown: true };
+    const s: UiState = { ...initialState, wasm: 'available' };
     const next = reducer(s, { type: 'CARVE_STARTED' });
     expect(next.runs.wasm.status).toBe('running');
     expect(next.runs.ts.status).toBe('running');
@@ -62,7 +64,7 @@ describe('CARVE_STARTED', () => {
   });
 
   test('only TS runs when WASM is unavailable', () => {
-    const s: UiState = { ...initialState, wasmAvailable: false, wasmStatusKnown: true };
+    const s: UiState = { ...initialState, wasm: 'unavailable' };
     const next = reducer(s, { type: 'CARVE_STARTED' });
     expect(next.runs.wasm.status).toBe('unavailable');
     expect(next.runs.ts.status).toBe('running');
@@ -95,8 +97,7 @@ describe('WORKER_RESPONSE', () => {
     const img = seedImageData(3, 3);
     const s: UiState = {
       ...initialState,
-      wasmAvailable: true,
-      wasmStatusKnown: true,
+      wasm: 'available',
       runs: { wasm: running, ts: running },
     };
     const next = reducer(s, {
@@ -115,8 +116,7 @@ describe('WORKER_RESPONSE', () => {
     const tsImg = seedImageData(3, 3);
     const s: UiState = {
       ...initialState,
-      wasmAvailable: true,
-      wasmStatusKnown: true,
+      wasm: 'available',
       carvedImageData: wasmImg,
       runs: {
         wasm: { status: 'done', elapsedMs: 42, tickerMs: null, errorMessage: null },
@@ -138,8 +138,7 @@ describe('WORKER_RESPONSE', () => {
     const tsImg = seedImageData(3, 3);
     const s: UiState = {
       ...initialState,
-      wasmAvailable: false,
-      wasmStatusKnown: true,
+      wasm: 'unavailable',
       carvedImageData: null,
       runs: {
         wasm: { status: 'unavailable', elapsedMs: null, tickerMs: null, errorMessage: null },
@@ -159,8 +158,7 @@ describe('WORKER_RESPONSE', () => {
     const tsImg = seedImageData(3, 3);
     const s: UiState = {
       ...initialState,
-      wasmAvailable: true,
-      wasmStatusKnown: true,
+      wasm: 'available',
       carvedImageData: null,
       runs: {
         wasm: { status: 'error', elapsedMs: null, tickerMs: null, errorMessage: 'trap' },

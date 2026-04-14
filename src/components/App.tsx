@@ -1,5 +1,11 @@
 import React, { useEffect, useReducer, useRef, useCallback } from 'react';
-import type { ResizeRequest, ResizeResponse, ResizeError, WasmStatus } from '../types';
+import type {
+  Engine,
+  ResizeRequest,
+  ResizeResponse,
+  ResizeError,
+  WasmStatus,
+} from '../types';
 import Masthead from './Masthead';
 import Controls from './Controls';
 import CanvasTabs from './CanvasTabs';
@@ -34,36 +40,31 @@ export default function App() {
       name: 'carver-ts',
     });
 
-    wasmWorker.onmessage = (e: MessageEvent<ResizeResponse | ResizeError | WasmStatus>) => {
-      const msg = e.data;
-      if (msg.type === 'WASM_STATUS') {
-        dispatch({ type: 'WASM_STATUS', available: msg.available });
-      } else if (msg.type === 'RESIZE') {
-        const imageData = new ImageData(
-          new Uint8ClampedArray(msg.buffer),
-          msg.width,
-          msg.height,
-        );
-        dispatch({ type: 'WORKER_RESPONSE', engine: 'wasm', elapsedMs: msg.elapsed, imageData });
-      } else {
-        dispatch({ type: 'WORKER_ERROR', engine: 'wasm', message: msg.message });
-      }
-    };
-    tsWorker.onmessage = (e: MessageEvent<ResizeResponse | ResizeError | WasmStatus>) => {
-      const msg = e.data;
-      // The TS worker also inits WASM on boot; ignore its WASM_STATUS (we source that from the WASM worker).
-      if (msg.type === 'WASM_STATUS') return;
-      if (msg.type === 'RESIZE') {
-        const imageData = new ImageData(
-          new Uint8ClampedArray(msg.buffer),
-          msg.width,
-          msg.height,
-        );
-        dispatch({ type: 'WORKER_RESPONSE', engine: 'ts', elapsedMs: msg.elapsed, imageData });
-      } else {
-        dispatch({ type: 'WORKER_ERROR', engine: 'ts', message: msg.message });
-      }
-    };
+    // Both workers run the same source and both emit WASM_STATUS on init. We
+    // only listen to the WASM-pinned worker's status; the TS worker's is
+    // ignored so we don't double-dispatch.
+    function makeOnMessage(engine: Engine, trackWasmStatus: boolean) {
+      return (e: MessageEvent<ResizeResponse | ResizeError | WasmStatus>) => {
+        const msg = e.data;
+        if (msg.type === 'WASM_STATUS') {
+          if (trackWasmStatus) dispatch({ type: 'WASM_STATUS', available: msg.available });
+          return;
+        }
+        if (msg.type === 'RESIZE') {
+          const imageData = new ImageData(
+            new Uint8ClampedArray(msg.buffer),
+            msg.width,
+            msg.height,
+          );
+          dispatch({ type: 'WORKER_RESPONSE', engine, elapsedMs: msg.elapsed, imageData });
+          return;
+        }
+        // Exhaustive: the only remaining discriminant is 'RESIZE_ERROR'.
+        dispatch({ type: 'WORKER_ERROR', engine, message: msg.message });
+      };
+    }
+    wasmWorker.onmessage = makeOnMessage('wasm', true);
+    tsWorker.onmessage = makeOnMessage('ts', false);
     wasmWorker.onerror = (e) =>
       dispatch({
         type: 'WORKER_ERROR',
@@ -86,14 +87,12 @@ export default function App() {
     };
   }, []);
 
-  // Load default sample on mount.
   useEffect(() => {
     urlToImageData('/samples/balloon.jpg').then((imageData) => {
       dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: 'balloon' });
     });
   }, []);
 
-  // Main-thread elapsed ticker. One interval drives both engines.
   useEffect(() => {
     const anyRunning =
       state.runs.wasm.status === 'running' || state.runs.ts.status === 'running';
@@ -126,14 +125,16 @@ export default function App() {
     });
   }, []);
 
+  // Narrow the dep list so handleCarve's identity doesn't change on every
+  // 100ms TICK dispatch (which would re-render Controls each tick).
+  const { imageData, derivative, targetWidth, targetHeight, wasm: wasmStatus } = state;
   const handleCarve = useCallback(() => {
-    const { imageData, derivative, targetWidth, targetHeight, wasmAvailable } = state;
     if (!imageData) return;
     const now = performance.now();
     tickerStartRef.current = { wasm: now, ts: now };
     dispatch({ type: 'CARVE_STARTED' });
 
-    function makeRequest(engine: 'wasm' | 'ts'): ResizeRequest {
+    function makeRequest(engine: Engine): ResizeRequest {
       return {
         type: 'RESIZE',
         buffer: cloneBuffer(imageData!.data),
@@ -146,7 +147,7 @@ export default function App() {
       };
     }
 
-    if (wasmAvailable && wasmWorkerRef.current) {
+    if (wasmStatus === 'available' && wasmWorkerRef.current) {
       const req = makeRequest('wasm');
       wasmWorkerRef.current.postMessage(req, [req.buffer]);
     }
@@ -154,7 +155,7 @@ export default function App() {
       const req = makeRequest('ts');
       tsWorkerRef.current.postMessage(req, [req.buffer]);
     }
-  }, [state]);
+  }, [imageData, derivative, targetWidth, targetHeight, wasmStatus]);
 
   const handleDownload = useCallback(() => {
     const canvas = canvasRef.current;
@@ -198,7 +199,7 @@ export default function App() {
         targetWidth={state.targetWidth}
         targetHeight={state.targetHeight}
         derivative={state.derivative}
-        wasmStatusKnown={state.wasmStatusKnown}
+        wasmStatusKnown={state.wasm !== 'checking'}
         runs={state.runs}
         onSample={handleSample}
         onUpload={handleUpload}
@@ -223,7 +224,7 @@ export default function App() {
       <div className="canvas-area" style={canvasAreaStyle}>
         <Canvas imageData={displayedImageData} canvasRef={canvasRef} style={canvasStyle} />
       </div>
-      <TimingPanel runs={state.runs} wasmAvailable={state.wasmAvailable} />
+      <TimingPanel runs={state.runs} wasmAvailable={state.wasm === 'available'} />
       <Explainer />
     </div>
   );
