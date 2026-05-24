@@ -80,9 +80,10 @@ export function reducer(state: UiState, action: Action): UiState {
         carvedImageData: null,
         activeTab: 'carved',
         runs: {
-          wasm: state.wasm === 'available'
-            ? { status: 'running', elapsedMs: null, tickerMs: 0, errorMessage: null }
-            : { status: 'unavailable', elapsedMs: null, tickerMs: null, errorMessage: null },
+          wasm:
+            state.wasm === 'available'
+              ? { status: 'running', elapsedMs: null, tickerMs: 0, errorMessage: null }
+              : { status: 'unavailable', elapsedMs: null, tickerMs: null, errorMessage: null },
           ts: { status: 'running', elapsedMs: null, tickerMs: 0, errorMessage: null },
         },
       };
@@ -107,8 +108,7 @@ export function reducer(state: UiState, action: Action): UiState {
       // ('unavailable') or it errored at runtime ('error'). Checking the
       // runtime `runs.wasm.status` (not the init-time availability) ensures a
       // successful TS run still displays when WASM failed mid-carve.
-      const useThisResult =
-        action.engine === 'wasm' || state.runs.wasm.status !== 'done';
+      const useThisResult = action.engine === 'wasm' || state.runs.wasm.status !== 'done';
       return {
         ...state,
         carvedImageData: useThisResult ? action.imageData : state.carvedImageData,

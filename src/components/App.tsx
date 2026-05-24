@@ -1,11 +1,5 @@
 import React, { useEffect, useReducer, useRef, useCallback } from 'react';
-import type {
-  Engine,
-  ResizeRequest,
-  ResizeResponse,
-  ResizeError,
-  WasmStatus,
-} from '../types';
+import type { Engine, ResizeRequest, ResizeResponse, ResizeError, WasmStatus } from '../types';
 import Masthead from './Masthead';
 import Controls from './Controls';
 import CanvasTabs from './CanvasTabs';
@@ -51,11 +45,7 @@ export default function App() {
           return;
         }
         if (msg.type === 'RESIZE') {
-          const imageData = new ImageData(
-            new Uint8ClampedArray(msg.buffer),
-            msg.width,
-            msg.height,
-          );
+          const imageData = new ImageData(new Uint8ClampedArray(msg.buffer), msg.width, msg.height);
           dispatch({ type: 'WORKER_RESPONSE', engine, elapsedMs: msg.elapsed, imageData });
           return;
         }
@@ -94,8 +84,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const anyRunning =
-      state.runs.wasm.status === 'running' || state.runs.ts.status === 'running';
+    const anyRunning = state.runs.wasm.status === 'running' || state.runs.ts.status === 'running';
 
     if (!anyRunning) {
       if (tickerIntervalRef.current !== null) {
@@ -166,8 +155,7 @@ export default function App() {
     a.click();
   }, []);
 
-  const displayedImageData =
-    state.activeTab === 'carved' ? state.carvedImageData : state.imageData;
+  const displayedImageData = state.activeTab === 'carved' ? state.carvedImageData : state.imageData;
 
   // The canvas-area wrapper is sized to the SOURCE image's native dimensions
   // (capped to container width). The canvas inside is rendered as a percentage

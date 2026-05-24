@@ -11,12 +11,6 @@ const running = {
   tickerMs: 0,
   errorMessage: null,
 };
-const idle = {
-  status: 'idle' as const,
-  elapsedMs: null,
-  tickerMs: null,
-  errorMessage: null,
-};
 
 describe('WASM_STATUS', () => {
   test('records availability as "available" on init success', () => {
