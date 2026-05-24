@@ -1,0 +1,2 @@
+# 24-hour cooldown on newly-published versions (supply-chain mitigation).
+minimumReleaseAge: 1440
