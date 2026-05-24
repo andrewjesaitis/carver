@@ -30,7 +30,7 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
-    "react": "^18.0.0",
+    "react": "^19.2.6",
     "react-dom": "^18.0.0"
   },
   "author": "Andrew Jesaitis",
