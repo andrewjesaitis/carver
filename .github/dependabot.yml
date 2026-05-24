@@ -1,0 +1,23 @@
+# Supply-chain hardening. See https://github.com/lirantal/npm-security-best-practices
+# cooldown delays upgrade PRs until a published version has aged the given days.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
