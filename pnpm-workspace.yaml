@@ -1,0 +1,18 @@
+# Supply-chain hardening. See https://github.com/lirantal/npm-security-best-practices
+
+# 24h cooldown on newly-published versions (incl. transitive).
+minimumReleaseAge: 1440
+
+# Refuse a version whose publish-time trust signals (provenance, OIDC, signatures)
+# regressed vs. a previously-installed version of the same package.
+trustPolicy: no-downgrade
+
+# Transitive deps may only resolve from the registry — no git/tarball URLs.
+blockExoticSubdeps: true
+
+# Make any unallowed lifecycle script a hard install failure (not a warning).
+strictDepBuilds: true
+
+# Explicit allow-list for packages permitted to run build scripts.
+allowBuilds:
+  esbuild: true
