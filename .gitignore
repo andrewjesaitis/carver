@@ -3,6 +3,7 @@ node_modules
 ./bower_components
 .claude/
 .superpowers/
+docs/superpowers/
 .gitattributes
 .tern-port
 package-lock.json
