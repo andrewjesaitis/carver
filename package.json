@@ -16,7 +16,7 @@
     "fmt:check": "oxfmt --check src"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^18.0.0",
     "@vitejs/plugin-react": "^4.0.0",
     "jsdom": "^24.0.0",
