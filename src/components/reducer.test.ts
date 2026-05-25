@@ -45,6 +45,31 @@ describe('IMAGE_LOADED', () => {
     expect(next.runs.wasm.status).toBe('idle');
     expect(next.runs.ts.status).toBe('idle');
   });
+
+  test('clears a previous imageLoadError on successful load', () => {
+    const s: UiState = { ...initialState, imageLoadError: 'old failure' };
+    const next = reducer(s, {
+      type: 'IMAGE_LOADED',
+      imageData: seedImageData(4, 4),
+      sampleKey: 'balloon',
+    });
+    expect(next.imageLoadError).toBeNull();
+  });
+});
+
+describe('IMAGE_LOAD_ERROR', () => {
+  test('records the error message', () => {
+    const next = reducer(initialState, { type: 'IMAGE_LOAD_ERROR', message: 'decode failed' });
+    expect(next.imageLoadError).toBe('decode failed');
+  });
+
+  test('does not blow away the previously-loaded image', () => {
+    const img = seedImageData(4, 4);
+    const s: UiState = { ...initialState, imageData: img };
+    const next = reducer(s, { type: 'IMAGE_LOAD_ERROR', message: 'bad upload' });
+    expect(next.imageData).toBe(img);
+    expect(next.imageLoadError).toBe('bad upload');
+  });
 });
 
 describe('CARVE_STARTED', () => {
@@ -168,6 +193,50 @@ describe('WORKER_RESPONSE', () => {
     expect(next.carvedImageData).toBe(tsImg);
     expect(next.runs.ts.status).toBe('done');
   });
+
+  test('stale response after IMAGE_LOADED is dropped (engine no longer running)', () => {
+    // Simulates: user loads a new image while a previous carve is still
+    // in flight. The previous carve's response must not overwrite the new
+    // image's blank canvas.
+    const newImg = seedImageData(10, 10);
+    const staleResult = seedImageData(3, 3);
+    let s = initialState;
+    s = reducer(s, { type: 'IMAGE_LOADED', imageData: newImg, sampleKey: 'tower' });
+    expect(s.runs.wasm.status).toBe('idle');
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'wasm',
+      elapsedMs: 99,
+      imageData: staleResult,
+    });
+    expect(next).toBe(s);
+    expect(next.carvedImageData).toBeNull();
+  });
+
+  test('late response after engine already done is dropped', () => {
+    // A duplicate/late response from a worker that already completed must
+    // not overwrite the displayed result or its elapsedMs.
+    const firstResult = seedImageData(3, 3);
+    const lateResult = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      wasm: 'available',
+      carvedImageData: firstResult,
+      runs: {
+        wasm: { status: 'done', elapsedMs: 42, tickerMs: null, errorMessage: null },
+        ts: { status: 'done', elapsedMs: 420, tickerMs: null, errorMessage: null },
+      },
+    };
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'wasm',
+      elapsedMs: 999,
+      imageData: lateResult,
+    });
+    expect(next).toBe(s);
+    expect(next.carvedImageData).toBe(firstResult);
+    expect(next.runs.wasm.elapsedMs).toBe(42);
+  });
 });
 
 describe('WORKER_ERROR', () => {
@@ -177,6 +246,25 @@ describe('WORKER_ERROR', () => {
     expect(next.runs.wasm.status).toBe('error');
     expect(next.runs.wasm.errorMessage).toBe('boom');
     expect(next.runs.ts.status).toBe('running');
+  });
+
+  test('late error after engine already done is dropped (preserves elapsedMs and image)', () => {
+    // A worker `onerror` arriving after a successful 'done' run must not
+    // flip the run to 'error' or wipe elapsedMs — the user is staring at
+    // that engine's image and the speedup should still display.
+    const result = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      carvedImageData: result,
+      runs: {
+        wasm: { status: 'done', elapsedMs: 42, tickerMs: null, errorMessage: null },
+        ts: running,
+      },
+    };
+    const next = reducer(s, { type: 'WORKER_ERROR', engine: 'wasm', message: 'late crash' });
+    expect(next).toBe(s);
+    expect(next.runs.wasm.elapsedMs).toBe(42);
+    expect(next.runs.wasm.status).toBe('done');
   });
 });
 

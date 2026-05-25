@@ -34,6 +34,21 @@ body {
   padding: 32px 24px 64px;
 }
 
+/* Image-load error banner */
+.image-load-error {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--fg);
+  background: var(--surface);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--fg-body);
+}
+.image-load-error strong {
+  font-weight: 600;
+  margin-right: 6px;
+}
+
 /* Masthead */
 .masthead {
   display: flex;

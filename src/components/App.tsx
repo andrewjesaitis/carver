@@ -19,7 +19,6 @@ export default function App() {
   const wasmWorkerRef = useRef<Worker | null>(null);
   const tsWorkerRef = useRef<Worker | null>(null);
   const tickerStartRef = useRef<{ wasm: number; ts: number }>({ wasm: 0, ts: 0 });
-  const tickerIntervalRef = useRef<number | null>(null);
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -78,40 +77,32 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    urlToImageData('/samples/balloon.jpg').then((imageData) => {
-      dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: 'balloon' });
-    });
+    urlToImageData('/samples/balloon.jpg')
+      .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: 'balloon' }))
+      .catch((err: Error) => dispatch({ type: 'IMAGE_LOAD_ERROR', message: err.message }));
   }, []);
 
   useEffect(() => {
     const anyRunning = state.runs.wasm.status === 'running' || state.runs.ts.status === 'running';
-
-    if (!anyRunning) {
-      if (tickerIntervalRef.current !== null) {
-        window.clearInterval(tickerIntervalRef.current);
-        tickerIntervalRef.current = null;
-      }
-      return;
-    }
-    if (tickerIntervalRef.current !== null) return;
-
-    tickerIntervalRef.current = window.setInterval(() => {
+    if (!anyRunning) return;
+    const interval = window.setInterval(() => {
       const now = performance.now();
       dispatch({ type: 'TICK', engine: 'wasm', elapsed: now - tickerStartRef.current.wasm });
       dispatch({ type: 'TICK', engine: 'ts', elapsed: now - tickerStartRef.current.ts });
     }, 100);
+    return () => window.clearInterval(interval);
   }, [state.runs.wasm.status, state.runs.ts.status]);
 
   const handleSample = useCallback((key: 'balloon' | 'tower') => {
-    urlToImageData(`/samples/${key}.jpg`).then((imageData) => {
-      dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: key });
-    });
+    urlToImageData(`/samples/${key}.jpg`)
+      .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: key }))
+      .catch((err: Error) => dispatch({ type: 'IMAGE_LOAD_ERROR', message: err.message }));
   }, []);
 
   const handleUpload = useCallback((file: File) => {
-    fileToImageData(file).then((imageData) => {
-      dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: 'upload' });
-    });
+    fileToImageData(file)
+      .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: 'upload' }))
+      .catch((err: Error) => dispatch({ type: 'IMAGE_LOAD_ERROR', message: err.message }));
   }, []);
 
   // Narrow the dep list so handleCarve's identity doesn't change on every
@@ -181,6 +172,11 @@ export default function App() {
   return (
     <div className="app">
       <Masthead />
+      {state.imageLoadError && (
+        <div className="image-load-error" role="alert">
+          <strong>Couldn't load image.</strong> {state.imageLoadError}
+        </div>
+      )}
       <Controls
         imageData={state.imageData}
         sampleKey={state.sampleKey}

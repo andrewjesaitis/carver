@@ -15,10 +15,12 @@ export interface UiState {
   sampleKey: SampleKey;
   wasm: WasmAvailability;
   runs: EngineRuns;
+  imageLoadError: string | null;
 }
 
 export type Action =
   | { type: 'IMAGE_LOADED'; imageData: ImageData; sampleKey: SampleKey }
+  | { type: 'IMAGE_LOAD_ERROR'; message: string }
   | { type: 'TARGET_WIDTH_CHANGED'; value: number }
   | { type: 'TARGET_HEIGHT_CHANGED'; value: number }
   | { type: 'DERIVATIVE_CHANGED'; value: Derivative }
@@ -51,6 +53,7 @@ export const initialState: UiState = {
   sampleKey: 'balloon',
   wasm: 'checking',
   runs: { wasm: idleEngineRun, ts: idleEngineRun },
+  imageLoadError: null,
 };
 
 export function reducer(state: UiState, action: Action): UiState {
@@ -65,7 +68,10 @@ export function reducer(state: UiState, action: Action): UiState {
         targetHeight: action.imageData.height,
         activeTab: 'original',
         runs: { wasm: idleEngineRun, ts: idleEngineRun },
+        imageLoadError: null,
       };
+    case 'IMAGE_LOAD_ERROR':
+      return { ...state, imageLoadError: action.message };
     case 'TARGET_WIDTH_CHANGED':
       return { ...state, targetWidth: action.value };
     case 'TARGET_HEIGHT_CHANGED':
@@ -97,17 +103,19 @@ export function reducer(state: UiState, action: Action): UiState {
         },
       };
     case 'WORKER_RESPONSE': {
+      // Drop stale responses: only accept while this engine is still 'running'.
+      // Otherwise a late response from a previous carve (or one in-flight
+      // when the image was swapped) would overwrite the new state.
+      if (state.runs[action.engine].status !== 'running') return state;
       const nextRun: EngineRunState = {
         status: 'done',
         elapsedMs: action.elapsedMs,
         tickerMs: null,
         errorMessage: null,
       };
-      // WASM's result is preferred whenever it lands. TS's result renders only
-      // when WASM is NOT producing a successful one — either it never ran
-      // ('unavailable') or it errored at runtime ('error'). Checking the
-      // runtime `runs.wasm.status` (not the init-time availability) ensures a
-      // successful TS run still displays when WASM failed mid-carve.
+      // WASM's 'done' result wins. TS's result renders whenever WASM hasn't
+      // produced a 'done' yet — covers WASM unavailable, errored, still
+      // running (race), or never started.
       const useThisResult = action.engine === 'wasm' || state.runs.wasm.status !== 'done';
       return {
         ...state,
@@ -116,6 +124,9 @@ export function reducer(state: UiState, action: Action): UiState {
       };
     }
     case 'WORKER_ERROR':
+      // Same staleness guard as WORKER_RESPONSE — a late onerror after a
+      // successful 'done' run must not clobber elapsedMs / the rendered image.
+      if (state.runs[action.engine].status !== 'running') return state;
       return {
         ...state,
         runs: {
