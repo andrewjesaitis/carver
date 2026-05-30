@@ -43,3 +43,15 @@ export interface WasmStatus {
   type: 'WASM_STATUS';
   available: boolean;
 }
+
+export interface EngineRunState {
+  status: 'idle' | 'running' | 'done' | 'error' | 'unavailable';
+  elapsedMs: number | null;
+  tickerMs: number | null;
+  errorMessage: string | null;
+}
+
+export interface EngineRuns {
+  wasm: EngineRunState;
+  ts: EngineRunState;
+}

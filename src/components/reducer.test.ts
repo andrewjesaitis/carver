@@ -1,0 +1,282 @@
+import { describe, test, expect } from 'vitest';
+import { reducer, initialState, type UiState } from './reducer';
+
+function seedImageData(w = 4, h = 4): ImageData {
+  return new ImageData(new Uint8ClampedArray(w * h * 4), w, h);
+}
+
+const running = {
+  status: 'running' as const,
+  elapsedMs: null,
+  tickerMs: 0,
+  errorMessage: null,
+};
+
+describe('WASM_STATUS', () => {
+  test('records availability as "available" on init success', () => {
+    const next = reducer(initialState, { type: 'WASM_STATUS', available: true });
+    expect(next.wasm).toBe('available');
+  });
+
+  test('records availability as "unavailable" on init failure', () => {
+    const next = reducer(initialState, { type: 'WASM_STATUS', available: false });
+    expect(next.wasm).toBe('unavailable');
+  });
+
+  test('initialState starts as "checking"', () => {
+    expect(initialState.wasm).toBe('checking');
+  });
+});
+
+describe('IMAGE_LOADED', () => {
+  test('sets image, defaults targets to native size, resets tab and runs', () => {
+    const img = seedImageData(800, 600);
+    const next = reducer(initialState, {
+      type: 'IMAGE_LOADED',
+      imageData: img,
+      sampleKey: 'balloon',
+    });
+    expect(next.imageData).toBe(img);
+    expect(next.sampleKey).toBe('balloon');
+    expect(next.targetWidth).toBe(800);
+    expect(next.targetHeight).toBe(600);
+    expect(next.activeTab).toBe('original');
+    expect(next.carvedImageData).toBeNull();
+    expect(next.runs.wasm.status).toBe('idle');
+    expect(next.runs.ts.status).toBe('idle');
+  });
+
+  test('clears a previous imageLoadError on successful load', () => {
+    const s: UiState = { ...initialState, imageLoadError: 'old failure' };
+    const next = reducer(s, {
+      type: 'IMAGE_LOADED',
+      imageData: seedImageData(4, 4),
+      sampleKey: 'balloon',
+    });
+    expect(next.imageLoadError).toBeNull();
+  });
+});
+
+describe('IMAGE_LOAD_ERROR', () => {
+  test('records the error message', () => {
+    const next = reducer(initialState, { type: 'IMAGE_LOAD_ERROR', message: 'decode failed' });
+    expect(next.imageLoadError).toBe('decode failed');
+  });
+
+  test('does not blow away the previously-loaded image', () => {
+    const img = seedImageData(4, 4);
+    const s: UiState = { ...initialState, imageData: img };
+    const next = reducer(s, { type: 'IMAGE_LOAD_ERROR', message: 'bad upload' });
+    expect(next.imageData).toBe(img);
+    expect(next.imageLoadError).toBe('bad upload');
+  });
+});
+
+describe('CARVE_STARTED', () => {
+  test('both engines running when WASM is available', () => {
+    const s: UiState = { ...initialState, wasm: 'available' };
+    const next = reducer(s, { type: 'CARVE_STARTED' });
+    expect(next.runs.wasm.status).toBe('running');
+    expect(next.runs.ts.status).toBe('running');
+    expect(next.activeTab).toBe('carved');
+    expect(next.carvedImageData).toBeNull();
+  });
+
+  test('only TS runs when WASM is unavailable', () => {
+    const s: UiState = { ...initialState, wasm: 'unavailable' };
+    const next = reducer(s, { type: 'CARVE_STARTED' });
+    expect(next.runs.wasm.status).toBe('unavailable');
+    expect(next.runs.ts.status).toBe('running');
+  });
+});
+
+describe('TICK', () => {
+  test('updates tickerMs for the specified engine when running', () => {
+    const s: UiState = { ...initialState, runs: { wasm: running, ts: running } };
+    const next = reducer(s, { type: 'TICK', engine: 'wasm', elapsed: 123 });
+    expect(next.runs.wasm.tickerMs).toBe(123);
+    expect(next.runs.ts.tickerMs).toBe(0);
+  });
+
+  test('is a no-op when the engine is not running', () => {
+    const s: UiState = {
+      ...initialState,
+      runs: {
+        wasm: { status: 'done', elapsedMs: 42, tickerMs: null, errorMessage: null },
+        ts: running,
+      },
+    };
+    const next = reducer(s, { type: 'TICK', engine: 'wasm', elapsed: 500 });
+    expect(next).toBe(s);
+  });
+});
+
+describe('WORKER_RESPONSE', () => {
+  test('WASM response moves the engine to done and renders its image', () => {
+    const img = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      wasm: 'available',
+      runs: { wasm: running, ts: running },
+    };
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'wasm',
+      elapsedMs: 42,
+      imageData: img,
+    });
+    expect(next.runs.wasm.status).toBe('done');
+    expect(next.runs.wasm.elapsedMs).toBe(42);
+    expect(next.carvedImageData).toBe(img);
+  });
+
+  test('TS response does NOT overwrite canvas when WASM ran successfully', () => {
+    const wasmImg = seedImageData(3, 3);
+    const tsImg = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      wasm: 'available',
+      carvedImageData: wasmImg,
+      runs: {
+        wasm: { status: 'done', elapsedMs: 42, tickerMs: null, errorMessage: null },
+        ts: running,
+      },
+    };
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'ts',
+      elapsedMs: 420,
+      imageData: tsImg,
+    });
+    expect(next.carvedImageData).toBe(wasmImg);
+    expect(next.runs.ts.elapsedMs).toBe(420);
+    expect(next.runs.ts.status).toBe('done');
+  });
+
+  test('TS response DOES render when WASM is unavailable', () => {
+    const tsImg = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      wasm: 'unavailable',
+      carvedImageData: null,
+      runs: {
+        wasm: { status: 'unavailable', elapsedMs: null, tickerMs: null, errorMessage: null },
+        ts: running,
+      },
+    };
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'ts',
+      elapsedMs: 420,
+      imageData: tsImg,
+    });
+    expect(next.carvedImageData).toBe(tsImg);
+  });
+
+  test('TS response DOES render when WASM errored at runtime', () => {
+    const tsImg = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      wasm: 'available',
+      carvedImageData: null,
+      runs: {
+        wasm: { status: 'error', elapsedMs: null, tickerMs: null, errorMessage: 'trap' },
+        ts: running,
+      },
+    };
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'ts',
+      elapsedMs: 420,
+      imageData: tsImg,
+    });
+    expect(next.carvedImageData).toBe(tsImg);
+    expect(next.runs.ts.status).toBe('done');
+  });
+
+  test('stale response after IMAGE_LOADED is dropped (engine no longer running)', () => {
+    // Simulates: user loads a new image while a previous carve is still
+    // in flight. The previous carve's response must not overwrite the new
+    // image's blank canvas.
+    const newImg = seedImageData(10, 10);
+    const staleResult = seedImageData(3, 3);
+    let s = initialState;
+    s = reducer(s, { type: 'IMAGE_LOADED', imageData: newImg, sampleKey: 'tower' });
+    expect(s.runs.wasm.status).toBe('idle');
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'wasm',
+      elapsedMs: 99,
+      imageData: staleResult,
+    });
+    expect(next).toBe(s);
+    expect(next.carvedImageData).toBeNull();
+  });
+
+  test('late response after engine already done is dropped', () => {
+    // A duplicate/late response from a worker that already completed must
+    // not overwrite the displayed result or its elapsedMs.
+    const firstResult = seedImageData(3, 3);
+    const lateResult = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      wasm: 'available',
+      carvedImageData: firstResult,
+      runs: {
+        wasm: { status: 'done', elapsedMs: 42, tickerMs: null, errorMessage: null },
+        ts: { status: 'done', elapsedMs: 420, tickerMs: null, errorMessage: null },
+      },
+    };
+    const next = reducer(s, {
+      type: 'WORKER_RESPONSE',
+      engine: 'wasm',
+      elapsedMs: 999,
+      imageData: lateResult,
+    });
+    expect(next).toBe(s);
+    expect(next.carvedImageData).toBe(firstResult);
+    expect(next.runs.wasm.elapsedMs).toBe(42);
+  });
+});
+
+describe('WORKER_ERROR', () => {
+  test('sets the specified engine to error; other engine unchanged', () => {
+    const s: UiState = { ...initialState, runs: { wasm: running, ts: running } };
+    const next = reducer(s, { type: 'WORKER_ERROR', engine: 'wasm', message: 'boom' });
+    expect(next.runs.wasm.status).toBe('error');
+    expect(next.runs.wasm.errorMessage).toBe('boom');
+    expect(next.runs.ts.status).toBe('running');
+  });
+
+  test('late error after engine already done is dropped (preserves elapsedMs and image)', () => {
+    // A worker `onerror` arriving after a successful 'done' run must not
+    // flip the run to 'error' or wipe elapsedMs — the user is staring at
+    // that engine's image and the speedup should still display.
+    const result = seedImageData(3, 3);
+    const s: UiState = {
+      ...initialState,
+      carvedImageData: result,
+      runs: {
+        wasm: { status: 'done', elapsedMs: 42, tickerMs: null, errorMessage: null },
+        ts: running,
+      },
+    };
+    const next = reducer(s, { type: 'WORKER_ERROR', engine: 'wasm', message: 'late crash' });
+    expect(next).toBe(s);
+    expect(next.runs.wasm.elapsedMs).toBe(42);
+    expect(next.runs.wasm.status).toBe('done');
+  });
+});
+
+describe('simple field setters', () => {
+  test('TARGET_WIDTH_CHANGED updates only targetWidth', () => {
+    const next = reducer(initialState, { type: 'TARGET_WIDTH_CHANGED', value: 400 });
+    expect(next.targetWidth).toBe(400);
+    expect(next.targetHeight).toBe(initialState.targetHeight);
+  });
+
+  test('TAB_CHANGED updates activeTab', () => {
+    const next = reducer(initialState, { type: 'TAB_CHANGED', tab: 'carved' });
+    expect(next.activeTab).toBe('carved');
+  });
+});

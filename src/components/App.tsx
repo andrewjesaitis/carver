@@ -1,130 +1,141 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import type { Derivative, Engine, ResizeResponse, ResizeError, WasmStatus } from '../types';
-import Canvas from './Canvas';
+import React, { useEffect, useReducer, useRef, useCallback } from 'react';
+import type { Engine, ResizeRequest, ResizeResponse, ResizeError, WasmStatus } from '../types';
+import Masthead from './Masthead';
 import Controls from './Controls';
+import CanvasTabs from './CanvasTabs';
+import Canvas from './Canvas';
+import TimingPanel from './TimingPanel';
+import Explainer from './Explainer';
+import { reducer, initialState } from './reducer';
+import { fileToImageData, urlToImageData } from './image-loading';
 import '../app.css';
 
-interface AppState {
-  imageData: ImageData | null;
-  status: 'idle' | 'processing' | 'error';
-  errorMessage: string | null;
-  targetWidth: number;
-  targetHeight: number;
-  derivative: Derivative;
-  engine: Engine;
-  wasmAvailable: boolean;
-  elapsed: number | null;
+function cloneBuffer(src: Uint8ClampedArray): ArrayBuffer {
+  return new Uint8ClampedArray(src).buffer;
 }
 
-/** Loads a File into an ImageData by drawing it onto an offscreen canvas. */
-function fileToImageData(file: File): Promise<ImageData> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('No 2d context'));
-        return;
-      }
-      ctx.drawImage(img, 0, 0);
-      resolve(ctx.getImageData(0, 0, img.width, img.height));
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
-/** Root application component — manages worker lifecycle and top-level state. */
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const workerRef = useRef<Worker | null>(null);
+  const wasmWorkerRef = useRef<Worker | null>(null);
+  const tsWorkerRef = useRef<Worker | null>(null);
+  const tickerStartRef = useRef<{ wasm: number; ts: number }>({ wasm: 0, ts: 0 });
 
-  const [state, setState] = useState<AppState>({
-    imageData: null,
-    status: 'idle',
-    errorMessage: null,
-    targetWidth: 0,
-    targetHeight: 0,
-    derivative: 'sobel',
-    // Optimistic default: worker falls back to TS if a resize fires before init completes.
-    engine: 'wasm',
-    wasmAvailable: false,
-    elapsed: null,
-  });
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Instantiate both workers upfront so the first Carve click doesn't pay WASM init cost.
+  useEffect(() => {
+    const wasmWorker = new Worker(new URL('../worker/carver.worker.ts', import.meta.url), {
+      type: 'module',
+      name: 'carver-wasm',
+    });
+    const tsWorker = new Worker(new URL('../worker/carver.worker.ts', import.meta.url), {
+      type: 'module',
+      name: 'carver-ts',
+    });
+
+    // Both workers run the same source and both emit WASM_STATUS on init. We
+    // only listen to the WASM-pinned worker's status; the TS worker's is
+    // ignored so we don't double-dispatch.
+    function makeOnMessage(engine: Engine, trackWasmStatus: boolean) {
+      return (e: MessageEvent<ResizeResponse | ResizeError | WasmStatus>) => {
+        const msg = e.data;
+        if (msg.type === 'WASM_STATUS') {
+          if (trackWasmStatus) dispatch({ type: 'WASM_STATUS', available: msg.available });
+          return;
+        }
+        if (msg.type === 'RESIZE') {
+          const imageData = new ImageData(new Uint8ClampedArray(msg.buffer), msg.width, msg.height);
+          dispatch({ type: 'WORKER_RESPONSE', engine, elapsedMs: msg.elapsed, imageData });
+          return;
+        }
+        // Exhaustive: the only remaining discriminant is 'RESIZE_ERROR'.
+        dispatch({ type: 'WORKER_ERROR', engine, message: msg.message });
+      };
+    }
+    wasmWorker.onmessage = makeOnMessage('wasm', true);
+    tsWorker.onmessage = makeOnMessage('ts', false);
+    wasmWorker.onerror = (e) =>
+      dispatch({
+        type: 'WORKER_ERROR',
+        engine: 'wasm',
+        message: e.message || 'Worker crashed',
+      });
+    tsWorker.onerror = (e) =>
+      dispatch({
+        type: 'WORKER_ERROR',
+        engine: 'ts',
+        message: e.message || 'Worker crashed',
+      });
+
+    wasmWorkerRef.current = wasmWorker;
+    tsWorkerRef.current = tsWorker;
+
+    return () => {
+      wasmWorker.terminate();
+      tsWorker.terminate();
+    };
+  }, []);
 
   useEffect(() => {
-    const worker = new Worker(new URL('../worker/carver.worker.ts', import.meta.url), {
-      type: 'module',
-    });
-    worker.onerror = (event) => {
-      console.error('[carver] worker error:', event.message, event);
-      setState((prev) => ({
-        ...prev,
-        status: 'error',
-        errorMessage: event.message || 'Worker crashed unexpectedly.',
-      }));
-    };
-    worker.onmessage = (event: MessageEvent<ResizeResponse | ResizeError | WasmStatus>) => {
-      const msg = event.data;
-      if (msg.type === 'WASM_STATUS') {
-        setState((prev) => ({
-          ...prev,
-          wasmAvailable: msg.available,
-          // Preserve user's selection; force 'ts' only when WASM is unavailable.
-          engine: msg.available ? prev.engine : 'ts',
-        }));
-      } else if (msg.type === 'RESIZE') {
-        const imageData = new ImageData(new Uint8ClampedArray(msg.buffer), msg.width, msg.height);
-        setState((prev) => ({ ...prev, imageData, status: 'idle', elapsed: msg.elapsed }));
-      } else {
-        setState((prev) => ({
-          ...prev,
-          imageData: null,
-          status: 'error',
-          errorMessage: msg.message,
-        }));
-      }
-    };
-    workerRef.current = worker;
-    return () => worker.terminate();
+    urlToImageData('/samples/balloon.jpg')
+      .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: 'balloon' }))
+      .catch((err: Error) => dispatch({ type: 'IMAGE_LOAD_ERROR', message: err.message }));
   }, []);
 
-  const handleUpload = useCallback(async (file: File) => {
-    const imageData = await fileToImageData(file);
-    setState((prev) => ({
-      ...prev,
-      imageData,
-      status: 'idle',
-      errorMessage: null,
-      targetWidth: imageData.width,
-      targetHeight: imageData.height,
-    }));
+  useEffect(() => {
+    const anyRunning = state.runs.wasm.status === 'running' || state.runs.ts.status === 'running';
+    if (!anyRunning) return;
+    const interval = window.setInterval(() => {
+      const now = performance.now();
+      dispatch({ type: 'TICK', engine: 'wasm', elapsed: now - tickerStartRef.current.wasm });
+      dispatch({ type: 'TICK', engine: 'ts', elapsed: now - tickerStartRef.current.ts });
+    }, 100);
+    return () => window.clearInterval(interval);
+  }, [state.runs.wasm.status, state.runs.ts.status]);
+
+  const handleSample = useCallback((key: 'balloon' | 'tower') => {
+    urlToImageData(`/samples/${key}.jpg`)
+      .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: key }))
+      .catch((err: Error) => dispatch({ type: 'IMAGE_LOAD_ERROR', message: err.message }));
   }, []);
 
-  const handleResize = useCallback(() => {
-    const { imageData, derivative, targetWidth, targetHeight, engine } = state;
-    if (!imageData || !workerRef.current) return;
-    const buffer = imageData.data.buffer;
-    setState((prev) => ({ ...prev, imageData: null, status: 'processing', elapsed: null }));
-    workerRef.current.postMessage(
-      {
+  const handleUpload = useCallback((file: File) => {
+    fileToImageData(file)
+      .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: 'upload' }))
+      .catch((err: Error) => dispatch({ type: 'IMAGE_LOAD_ERROR', message: err.message }));
+  }, []);
+
+  // Narrow the dep list so handleCarve's identity doesn't change on every
+  // 100ms TICK dispatch (which would re-render Controls each tick).
+  const { imageData, derivative, targetWidth, targetHeight, wasm: wasmStatus } = state;
+  const handleCarve = useCallback(() => {
+    if (!imageData) return;
+    const now = performance.now();
+    tickerStartRef.current = { wasm: now, ts: now };
+    dispatch({ type: 'CARVE_STARTED' });
+
+    function makeRequest(engine: Engine): ResizeRequest {
+      return {
         type: 'RESIZE',
-        buffer,
-        width: imageData.width,
-        height: imageData.height,
+        buffer: cloneBuffer(imageData!.data),
+        width: imageData!.width,
+        height: imageData!.height,
         derivative,
         targetWidth,
         targetHeight,
         engine,
-      },
-      [buffer],
-    );
-  }, [state]);
+      };
+    }
+
+    if (wasmStatus === 'available' && wasmWorkerRef.current) {
+      const req = makeRequest('wasm');
+      wasmWorkerRef.current.postMessage(req, [req.buffer]);
+    }
+    if (tsWorkerRef.current) {
+      const req = makeRequest('ts');
+      tsWorkerRef.current.postMessage(req, [req.buffer]);
+    }
+  }, [imageData, derivative, targetWidth, targetHeight, wasmStatus]);
 
   const handleDownload = useCallback(() => {
     const canvas = canvasRef.current;
@@ -135,29 +146,70 @@ export default function App() {
     a.click();
   }, []);
 
+  const displayedImageData = state.activeTab === 'carved' ? state.carvedImageData : state.imageData;
+
+  // The canvas-area wrapper is sized to the SOURCE image's native dimensions
+  // (capped to container width). The canvas inside is rendered as a percentage
+  // of the wrapper based on how large the displayed bitmap is relative to the
+  // source — so the Original fills the wrapper exactly (no whitespace) and the
+  // Carved result visibly occupies less of the same fixed area.
+  const canvasAreaStyle: React.CSSProperties | undefined = state.imageData
+    ? {
+        width: '100%',
+        maxWidth: `${state.imageData.width}px`,
+        aspectRatio: `${state.imageData.width} / ${state.imageData.height}`,
+      }
+    : undefined;
+
+  const canvasStyle: React.CSSProperties | undefined =
+    state.imageData && displayedImageData
+      ? {
+          width: `${(displayedImageData.width / state.imageData.width) * 100}%`,
+          height: `${(displayedImageData.height / state.imageData.height) * 100}%`,
+        }
+      : undefined;
+
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>Carver</h1>
-      </header>
+      <Masthead />
+      {state.imageLoadError && (
+        <div className="image-load-error" role="alert">
+          <strong>Couldn't load image.</strong> {state.imageLoadError}
+        </div>
+      )}
       <Controls
         imageData={state.imageData}
+        sampleKey={state.sampleKey}
         targetWidth={state.targetWidth}
         targetHeight={state.targetHeight}
         derivative={state.derivative}
-        engine={state.engine}
-        wasmAvailable={state.wasmAvailable}
-        elapsed={state.elapsed}
-        status={state.status}
+        wasmStatusKnown={state.wasm !== 'checking'}
+        runs={state.runs}
+        onSample={handleSample}
         onUpload={handleUpload}
-        onTargetWidthChange={(w) => setState((prev) => ({ ...prev, targetWidth: w }))}
-        onTargetHeightChange={(h) => setState((prev) => ({ ...prev, targetHeight: h }))}
-        onDerivativeChange={(d) => setState((prev) => ({ ...prev, derivative: d }))}
-        onEngineChange={(e) => setState((prev) => ({ ...prev, engine: e }))}
-        onResize={handleResize}
+        onTargetWidthChange={(v) => dispatch({ type: 'TARGET_WIDTH_CHANGED', value: v })}
+        onTargetHeightChange={(v) => dispatch({ type: 'TARGET_HEIGHT_CHANGED', value: v })}
+        onDerivativeChange={(v) => dispatch({ type: 'DERIVATIVE_CHANGED', value: v })}
+        onCarve={handleCarve}
         onDownload={handleDownload}
       />
-      <Canvas imageData={state.imageData} canvasRef={canvasRef} />
+      <CanvasTabs
+        activeTab={state.activeTab}
+        originalSize={
+          state.imageData ? { w: state.imageData.width, h: state.imageData.height } : null
+        }
+        carvedSize={
+          state.carvedImageData
+            ? { w: state.carvedImageData.width, h: state.carvedImageData.height }
+            : null
+        }
+        onTabChange={(tab) => dispatch({ type: 'TAB_CHANGED', tab })}
+      />
+      <div className="canvas-area" style={canvasAreaStyle}>
+        <Canvas imageData={displayedImageData} canvasRef={canvasRef} style={canvasStyle} />
+      </div>
+      <TimingPanel runs={state.runs} wasmAvailable={state.wasm === 'available'} />
+      <Explainer />
     </div>
   );
 }
