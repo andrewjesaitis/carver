@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 
 interface CanvasProps {
   imageData: ImageData | null;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   style?: React.CSSProperties;
 }
 
