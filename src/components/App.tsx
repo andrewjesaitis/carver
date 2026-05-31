@@ -112,7 +112,6 @@ export default function App() {
       const msg = e.data;
       if (msg.type === 'VISUALIZE_READY') {
         dispatch({ type: 'VISUALIZE_READY', totalSeams: msg.totalSeams });
-        vizWorker.postMessage({ type: 'VISUALIZE_SEEK', seam: 0 } satisfies VisualizeSeek);
         return;
       }
       if (msg.type === 'VISUALIZE_FRAME') {
