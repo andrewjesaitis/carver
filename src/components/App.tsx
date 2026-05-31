@@ -2,13 +2,14 @@ import React, { useEffect, useReducer, useRef, useCallback } from 'react';
 import type {
   Engine, ResizeRequest, ResizeResponse, ResizeError, WasmStatus,
   VisualizeInit, VisualizeSeek, VisualizeReady, VisualizeFrameMsg, VisualizerFrame,
+  VisualizerStage,
 } from '../types';
 import Masthead from './Masthead';
 import Controls from './Controls';
 import CanvasTabs from './CanvasTabs';
 import Canvas from './Canvas';
 import TimingPanel from './TimingPanel';
-import Explainer from './Explainer';
+import Visualizer from './Visualizer';
 import { reducer, initialState } from './reducer';
 import { fileToImageData, urlToImageData } from './image-loading';
 import '../app.css';
@@ -204,6 +205,24 @@ export default function App() {
     a.click();
   }, []);
 
+  const handleStageChange = useCallback((stage: VisualizerStage) => {
+    dispatch({ type: 'VISUALIZE_STAGE_CHANGED', stage });
+  }, []);
+
+  const handleSeamChange = useCallback((seam: number) => {
+    dispatch({ type: 'VISUALIZE_SEAM_CHANGED', seam });
+  }, []);
+
+  const handlePlayToggle = useCallback(() => {
+    dispatch({ type: 'VISUALIZE_PLAY_TOGGLED' });
+  }, []);
+
+  const handleSpeedCycle = useCallback(() => {
+    const speeds: Array<0.5 | 1 | 2 | 4> = [0.5, 1, 2, 4];
+    const next = speeds[(speeds.indexOf(state.viz.speed) + 1) % speeds.length];
+    dispatch({ type: 'VISUALIZE_SPEED_CHANGED', speed: next });
+  }, [state.viz.speed]);
+
   const displayedImageData = state.activeTab === 'carved' ? state.carvedImageData : state.imageData;
 
   // The canvas-area wrapper is sized to the SOURCE image's native dimensions
@@ -267,7 +286,13 @@ export default function App() {
         <Canvas imageData={displayedImageData} canvasRef={canvasRef} style={canvasStyle} />
       </div>
       <TimingPanel runs={state.runs} wasmAvailable={state.wasm === 'available'} />
-      <Explainer />
+      <Visualizer
+        viz={state.viz}
+        onStageChange={handleStageChange}
+        onSeamChange={handleSeamChange}
+        onPlayToggle={handlePlayToggle}
+        onSpeedCycle={handleSpeedCycle}
+      />
     </div>
   );
 }
