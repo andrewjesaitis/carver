@@ -55,3 +55,67 @@ export interface EngineRuns {
   wasm: EngineRunState;
   ts: EngineRunState;
 }
+
+export type VisualizerStage = 'image' | 'energy' | 'cost' | 'seam';
+
+export interface KernelSample {
+  pixels: number[];   // 3×3 luminance values, row-major, centered on seam midpoint
+  gx: number;
+  gy: number;
+  magnitude: number;
+  centerX: number;
+  centerY: number;
+}
+
+export interface CostDetailSample {
+  costs: number[];    // 7×7 grid centred on seam-edge minimum, row-major
+  arrowDirs: ('left' | 'up' | 'right')[];  // parent-pointer direction per cell
+  gridWidth: number;
+  gridHeight: number;
+  minIndex: number;   // index of the minimum cell within this grid
+}
+
+export interface VisualizerFrame {
+  seam: number;       // 0-indexed
+  imageData: ImageData;
+  energyMap: ImageData;
+  costHeatmap: ImageData;
+  seamPath: Seam;
+  kernelSample: KernelSample;
+  costDetail: CostDetailSample;
+}
+
+// Worker messages
+export interface VisualizeInit {
+  type: 'VISUALIZE_INIT';
+  buffer: ArrayBuffer;
+  width: number;
+  height: number;
+  derivative: Derivative;
+  targetWidth: number;
+  targetHeight: number;
+}
+
+export interface VisualizeSeek {
+  type: 'VISUALIZE_SEEK';
+  seam: number;
+}
+
+export interface VisualizeReady {
+  type: 'VISUALIZE_READY';
+  totalSeams: number;
+}
+
+// Transfers ArrayBuffers (not ImageData) to match the existing ResizeResponse pattern.
+export interface VisualizeFrameMsg {
+  type: 'VISUALIZE_FRAME';
+  seam: number;
+  imageBuffer: ArrayBuffer;
+  energyBuffer: ArrayBuffer;
+  costBuffer: ArrayBuffer;
+  width: number;
+  height: number;
+  seamPath: Seam;
+  kernelSample: KernelSample;
+  costDetail: CostDetailSample;
+}
