@@ -95,6 +95,12 @@ export default function Visualizer({
         ? frame.costHeatmap
         : frame.imageData;
   const showSeam = currentStage === 'seam';
+  // On the energy stage, mark the pixel the kernel detail is sampled from so
+  // the 3×3 grid below ties back to a location on the image.
+  const marker =
+    currentStage === 'energy'
+      ? { x: frame.kernelSample.centerX, y: frame.kernelSample.centerY }
+      : undefined;
 
   // Reserve the canvas area at the ORIGINAL image's aspect ratio so the box
   // height stays constant as the image is carved narrower/shorter. The current
@@ -130,6 +136,7 @@ export default function Visualizer({
           <VisualizerCanvas
             imageData={activeImageData}
             seamPath={showSeam ? frame.seamPath : undefined}
+            marker={marker}
             style={canvasStyle}
           />
         </div>
