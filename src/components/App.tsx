@@ -142,6 +142,7 @@ export default function App() {
     vizWorker.postMessage(req, [req.buffer]);
 
     return () => vizWorker.terminate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.runs.ts.status]); // intentionally narrow — fires once per TS carve completion
 
   useEffect(() => {

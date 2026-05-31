@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { resizeSteps, resize, ripSeam } from './carver';
-import type { VisualizerFrame } from '../types';
 
 function makeImage(w: number, h: number): ImageData {
   const data = new Uint8ClampedArray(w * h * 4);
