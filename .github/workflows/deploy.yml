@@ -44,6 +44,7 @@ jobs:
         env:
           COMMIT_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
+          git fetch --depth=1 origin "$COMMIT_SHA"
           subject=$(git log -1 --pretty=%s "$COMMIT_SHA")
           echo "subject=$subject" >> "$GITHUB_OUTPUT"
 
