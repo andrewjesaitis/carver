@@ -67,14 +67,17 @@ export interface KernelSample {
   centerY: number;
 }
 
+export type CostDir = 'left' | 'up' | 'right';
+
 export interface CostDetailSample {
-  costs: number[];    // 7×7 grid centred on seam-edge minimum, row-major
-  arrowDirs: ('left' | 'up' | 'right')[];  // parent-pointer direction per cell
+  costs: number[];    // row-major grid of cumulative costs, size = gridWidth × gridHeight
+  arrowDirs: CostDir[];  // parent-pointer direction per cell
   gridWidth: number;
   gridHeight: number;
   minIndex: number;   // index of the minimum cell within this grid
 }
 
+// Worker-internal snapshot — never posted directly; use VisualizeFrameMsg for transfer.
 export interface VisualizerFrame {
   seam: number;       // 0-indexed
   imageData: ImageData;
