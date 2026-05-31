@@ -250,3 +250,246 @@ body {
   line-height: 1.6;
   color: var(--fg-body);
 }
+
+/* ── Visualizer ─────────────────────────────────────────── */
+
+.visualizer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.visualizer-label {
+  font-family: var(--font-serif);
+  font-size: 0.75rem;
+  text-transform: lowercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.visualizer-placeholder {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* Stage tabs */
+.visualizer-stage-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.stage-tab {
+  flex: 1;
+  padding: 0.35rem 0;
+  background: #e5e5e4;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.1s;
+}
+
+.stage-tab--active {
+  background: #151515;
+  color: #f5f5f4;
+}
+
+/* Canvas + inspector */
+.visualizer-body {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.visualizer-canvas-wrap {
+  flex: 2;
+  min-width: 0;
+}
+
+.visualizer-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 3px;
+}
+
+.visualizer-caption {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  margin: 0.4rem 0 0.75rem;
+}
+
+/* Playback controls */
+.playback-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.4rem 0.75rem;
+  font-family: var(--font-sans);
+}
+
+.playback-nav {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.playback-nav button {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #767676;
+  border-radius: 3px;
+}
+
+.playback-nav button:hover {
+  background: #f5f5f4;
+  color: #151515;
+}
+
+.playback-nav button:nth-child(3) {
+  background: #151515;
+  color: #f5f5f4;
+  padding: 0.25rem 0.6rem;
+}
+
+.playback-nav button:nth-child(3):hover {
+  background: #333;
+}
+
+.playback-counter {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.playback-speed {
+  background: #e3e3e3;
+  border: none;
+  border-radius: 3px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  color: #151515;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+.playback-speed:hover {
+  background: #d0d0d0;
+}
+
+/* Kernel detail pane */
+.kernel-detail {
+  flex: 1;
+  background: #f8f8f6;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kernel-detail-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.kernel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.kernel-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  border-radius: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kernel-cell--center {
+  outline: 2px solid #e6a800;
+  outline-offset: -1px;
+}
+
+.kernel-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.kernel-stats strong {
+  color: #151515;
+}
+
+/* Cost detail pane */
+.cost-detail {
+  flex: 1;
+  background: #f8f8f6;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cost-detail-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.cost-grid {
+  display: grid;
+  gap: 1px;
+}
+
+.cost-cell {
+  background: #151515;
+  border-radius: 1px;
+  padding: 2px 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cost-cell--min {
+  outline: 2px solid #ef4444;
+  outline-offset: -1px;
+}
+
+.cost-arrow {
+  font-size: 0.55rem;
+  color: #f5f5f4;
+  line-height: 1;
+}
+
+.cost-value {
+  font-size: 0.5rem;
+  color: #aaa;
+  font-variant-numeric: tabular-nums;
+}
