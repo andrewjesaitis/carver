@@ -95,12 +95,15 @@ export default function Visualizer({
         ? frame.costHeatmap
         : frame.imageData;
   const showSeam = currentStage === 'seam';
-  // On the energy stage, mark the pixel the kernel detail is sampled from so
-  // the 3×3 grid below ties back to a location on the image.
+  // Mark the cell each detail pane is sampled from so the grid below ties back
+  // to a location on the canvas: the kernel midpoint on energy, and the
+  // minimum-cost starting cell (where the seam begins, seamPath[0]) on cost.
   const marker =
     currentStage === 'energy'
       ? { x: frame.kernelSample.centerX, y: frame.kernelSample.centerY }
-      : undefined;
+      : currentStage === 'cost' && frame.seamPath.length > 0
+        ? { x: frame.seamPath[0].x, y: frame.seamPath[0].y }
+        : undefined;
 
   // Reserve the canvas area at the ORIGINAL image's aspect ratio so the box
   // height stays constant as the image is carved narrower/shorter. The current
