@@ -420,6 +420,40 @@ function buildFrame(
 }
 
 /**
+ * Generator that yields one `VisualizerFrame` per seam removal, in order: all vertical seams
+ * first (width reduction), then all horizontal seams (height reduction).
+ * Each frame captures the image/energy/cost/seam state BEFORE the seam is removed.
+ */
+export function* resizeSteps(
+  imageData: ImageData,
+  derivative: Derivative,
+  width: number,
+  height: number,
+): Generator<VisualizerFrame> {
+  let img = imageData;
+  let grad = derivative === 'sobel' ? sobelGradient(img) : simpleGradient(img);
+  let seamIndex = 0;
+
+  while (img.width > width) {
+    const costMatrix = computeCostMatrix(grad, 'vertical');
+    const seam = computeSeam('vertical', costMatrix);
+    yield buildFrame(img, grad, costMatrix, seam, seamIndex, 'vertical');
+    img = ripSeam(seam, 'vertical', img);
+    grad = ripSeam(seam, 'vertical', grad);
+    seamIndex++;
+  }
+
+  while (img.height > height) {
+    const costMatrix = computeCostMatrix(grad, 'horizontal');
+    const seam = computeSeam('horizontal', costMatrix);
+    yield buildFrame(img, grad, costMatrix, seam, seamIndex, 'horizontal');
+    img = ripSeam(seam, 'horizontal', img);
+    grad = ripSeam(seam, 'horizontal', grad);
+    seamIndex++;
+  }
+}
+
+/**
  * Seam-carves `imageData` down to `width` × `height` using the specified gradient `derivative`.
  * Silently no-ops for any dimension already at or below the target (enlargement is not supported).
  * The gradient is computed once upfront and seam-ripped in parallel with the image each iteration.
