@@ -50,7 +50,10 @@ describe('resizeSteps', () => {
   });
 
   it('produces the same final image as resize()', () => {
-    const w = 10, h = 8, tw = 7, th = 6;
+    const w = 10,
+      h = 8,
+      tw = 7,
+      th = 6;
     const img = makeImage(w, h);
 
     // Reconstruct final image by applying each frame's seamPath to its imageData

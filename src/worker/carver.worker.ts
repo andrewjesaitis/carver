@@ -32,9 +32,7 @@ init(wasmUrl)
     self.postMessage({ type: 'WASM_STATUS', available: false } satisfies WasmStatus);
   });
 
-self.onmessage = (
-  event: MessageEvent<ResizeRequest | VisualizeInit | VisualizeSeek>,
-) => {
+self.onmessage = (event: MessageEvent<ResizeRequest | VisualizeInit | VisualizeSeek>) => {
   const msg = event.data;
 
   if (msg.type === 'RESIZE') {
@@ -64,7 +62,14 @@ self.onmessage = (
   }
 
   if (msg.type === 'VISUALIZE_INIT') {
-    vizState = initViz(msg.buffer, msg.width, msg.height, msg.derivative, msg.targetWidth, msg.targetHeight);
+    vizState = initViz(
+      msg.buffer,
+      msg.width,
+      msg.height,
+      msg.derivative,
+      msg.targetWidth,
+      msg.targetHeight,
+    );
     const totalSeams = computeTotalSeams(msg.width, msg.height, msg.targetWidth, msg.targetHeight);
     self.postMessage({ type: 'VISUALIZE_READY', totalSeams } satisfies VisualizeReady);
     return;
@@ -87,7 +92,11 @@ self.onmessage = (
         kernelSample: frame.kernelSample,
         costDetail: frame.costDetail,
       };
-      self.postMessage(response, [response.imageBuffer, response.energyBuffer, response.costBuffer]);
+      self.postMessage(response, [
+        response.imageBuffer,
+        response.energyBuffer,
+        response.costBuffer,
+      ]);
     } catch (err) {
       console.error('[carver-worker] VISUALIZE_SEEK failed:', err);
     }

@@ -8,7 +8,9 @@ export default function KernelDetail({ sample }: Props) {
   const { pixels, gx, gy, magnitude, centerX, centerY } = sample;
   return (
     <div className="kernel-detail">
-      <div className="kernel-detail-label">kernel at ({centerX}, {centerY})</div>
+      <div className="kernel-detail-label">
+        kernel at ({centerX}, {centerY})
+      </div>
       <div className="kernel-grid">
         {pixels.map((v, i) => (
           <div

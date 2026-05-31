@@ -291,9 +291,27 @@ function makeVizFrame(seam = 0): VisualizerFrame {
     imageData: img,
     energyMap: img,
     costHeatmap: img,
-    seamPath: [{ x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 2 }, { x: 2, y: 3 }],
-    kernelSample: { pixels: new Array(9).fill(128), gx: 0, gy: 0, magnitude: 0, centerX: 2, centerY: 2 },
-    costDetail: { costs: new Array(49).fill(100), arrowDirs: new Array(49).fill('up' as const), gridWidth: 7, gridHeight: 7, minIndex: 24 },
+    seamPath: [
+      { x: 2, y: 0 },
+      { x: 2, y: 1 },
+      { x: 2, y: 2 },
+      { x: 2, y: 3 },
+    ],
+    kernelSample: {
+      pixels: new Array(9).fill(128),
+      gx: 0,
+      gy: 0,
+      magnitude: 0,
+      centerX: 2,
+      centerY: 2,
+    },
+    costDetail: {
+      costs: new Array(49).fill(100),
+      arrowDirs: new Array(49).fill('up' as const),
+      gridWidth: 7,
+      gridHeight: 7,
+      minIndex: 24,
+    },
   };
 }
 
@@ -302,7 +320,15 @@ describe('viz reducer', () => {
     const s: UiState = {
       ...initialState,
       wasm: 'available',
-      viz: { status: 'ready', totalSeams: 10, currentSeam: 5, currentStage: 'cost', frame: makeVizFrame(), isPlaying: false, speed: 1 },
+      viz: {
+        status: 'ready',
+        totalSeams: 10,
+        currentSeam: 5,
+        currentStage: 'cost',
+        frame: makeVizFrame(),
+        isPlaying: false,
+        speed: 1,
+      },
     };
     const next = reducer(s, { type: 'CARVE_STARTED' });
     expect(next.viz.status).toBe('computing');

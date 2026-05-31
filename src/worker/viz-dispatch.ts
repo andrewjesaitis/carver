@@ -44,10 +44,7 @@ export function initViz(
   };
 }
 
-export function seekViz(
-  state: VizState,
-  n: number,
-): { state: VizState; frame: VisualizerFrame } {
+export function seekViz(state: VizState, n: number): { state: VizState; frame: VisualizerFrame } {
   if (n > state.currentSeam) {
     return advanceTo(state, n);
   }
@@ -63,10 +60,7 @@ export function seekViz(
   return advanceTo(fresh, n);
 }
 
-function advanceTo(
-  state: VizState,
-  n: number,
-): { state: VizState; frame: VisualizerFrame } {
+function advanceTo(state: VizState, n: number): { state: VizState; frame: VisualizerFrame } {
   const seams = [...state.seams];
   let currentSeam = state.currentSeam;
   let frame: VisualizerFrame | undefined;

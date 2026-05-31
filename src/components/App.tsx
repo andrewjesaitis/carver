@@ -1,7 +1,15 @@
 import React, { useEffect, useReducer, useRef, useCallback } from 'react';
 import type {
-  Engine, ResizeRequest, ResizeResponse, ResizeError, WasmStatus,
-  VisualizeInit, VisualizeSeek, VisualizeReady, VisualizeFrameMsg, VisualizerFrame,
+  Engine,
+  ResizeRequest,
+  ResizeResponse,
+  ResizeError,
+  WasmStatus,
+  VisualizeInit,
+  VisualizeSeek,
+  VisualizeReady,
+  VisualizeFrameMsg,
+  VisualizerFrame,
   VisualizerStage,
 } from '../types';
 import Masthead from './Masthead';
@@ -98,7 +106,12 @@ export default function App() {
     return () => window.clearInterval(interval);
   }, [state.runs.wasm.status, state.runs.ts.status]);
 
-  const { imageData: currentImageData, derivative: currentDerivative, targetWidth: currentTargetWidth, targetHeight: currentTargetHeight } = state;
+  const {
+    imageData: currentImageData,
+    derivative: currentDerivative,
+    targetWidth: currentTargetWidth,
+    targetHeight: currentTargetHeight,
+  } = state;
 
   useEffect(() => {
     if (state.runs.ts.status !== 'done' || !currentImageData) return;
@@ -142,14 +155,15 @@ export default function App() {
     vizWorker.postMessage(req, [req.buffer]);
 
     return () => vizWorker.terminate();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.runs.ts.status]); // intentionally narrow — fires once per TS carve completion
 
   useEffect(() => {
     if (state.viz.status !== 'ready' || !vizWorkerRef.current) return;
-    vizWorkerRef.current.postMessage(
-      { type: 'VISUALIZE_SEEK', seam: state.viz.currentSeam } satisfies VisualizeSeek,
-    );
+    vizWorkerRef.current.postMessage({
+      type: 'VISUALIZE_SEEK',
+      seam: state.viz.currentSeam,
+    } satisfies VisualizeSeek);
   }, [state.viz.currentSeam, state.viz.status]);
 
   const handleSample = useCallback((key: 'balloon' | 'tower') => {

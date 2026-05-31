@@ -1,4 +1,11 @@
-import type { Derivative, Engine, EngineRuns, EngineRunState, VisualizerStage, VisualizerFrame } from '../types';
+import type {
+  Derivative,
+  Engine,
+  EngineRuns,
+  EngineRunState,
+  VisualizerStage,
+  VisualizerFrame,
+} from '../types';
 
 export interface VizState {
   status: 'idle' | 'computing' | 'ready';
@@ -173,7 +180,10 @@ export function reducer(state: UiState, action: Action): UiState {
     case 'VISUALIZE_READY':
       return { ...state, viz: { ...state.viz, status: 'ready', totalSeams: action.totalSeams } };
     case 'VISUALIZE_FRAME':
-      return { ...state, viz: { ...state.viz, frame: action.frame, currentSeam: action.frame.seam } };
+      return {
+        ...state,
+        viz: { ...state.viz, frame: action.frame, currentSeam: action.frame.seam },
+      };
     case 'VISUALIZE_STAGE_CHANGED':
       return { ...state, viz: { ...state.viz, currentStage: action.stage } };
     case 'VISUALIZE_SEAM_CHANGED':

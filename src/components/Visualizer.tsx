@@ -7,7 +7,10 @@ import PlaybackControls from './PlaybackControls';
 
 const STAGES: VisualizerStage[] = ['image', 'energy', 'cost', 'seam'];
 const STAGE_LABELS: Record<VisualizerStage, string> = {
-  image: 'i. image', energy: 'ii. energy', cost: 'iii. cost', seam: 'iv. seam',
+  image: 'i. image',
+  energy: 'ii. energy',
+  cost: 'iii. cost',
+  seam: 'iv. seam',
 };
 const CAPTIONS: Record<VisualizerStage, string> = {
   image: 'The current image, before this seam is removed.',
@@ -24,7 +27,13 @@ interface Props {
   onSpeedCycle: () => void;
 }
 
-export default function Visualizer({ viz, onStageChange, onSeamChange, onPlayToggle, onSpeedCycle }: Props) {
+export default function Visualizer({
+  viz,
+  onStageChange,
+  onSeamChange,
+  onPlayToggle,
+  onSpeedCycle,
+}: Props) {
   const stageIdx = STAGES.indexOf(viz.currentStage);
 
   const handleNext = useCallback(() => {
@@ -56,8 +65,9 @@ export default function Visualizer({ viz, onStageChange, onSeamChange, onPlayTog
 
   if (viz.status !== 'ready' || !viz.frame) {
     const message =
-      viz.status === 'idle' ? 'Run a carve above to activate the visualizer.'
-      : 'Computing visualizer…';
+      viz.status === 'idle'
+        ? 'Run a carve above to activate the visualizer.'
+        : 'Computing visualizer…';
     return (
       <section className="visualizer">
         <div className="visualizer-label">how seam carving works</div>
@@ -68,16 +78,18 @@ export default function Visualizer({ viz, onStageChange, onSeamChange, onPlayTog
 
   const { frame, currentStage, currentSeam, totalSeams, isPlaying, speed } = viz;
   const activeImageData =
-    currentStage === 'energy' ? frame.energyMap
-    : currentStage === 'cost' ? frame.costHeatmap
-    : frame.imageData;
+    currentStage === 'energy'
+      ? frame.energyMap
+      : currentStage === 'cost'
+        ? frame.costHeatmap
+        : frame.imageData;
   const showSeam = currentStage === 'seam';
 
   return (
     <section className="visualizer">
       <div className="visualizer-label">how seam carving works</div>
       <div className="visualizer-stage-tabs">
-        {STAGES.map(s => (
+        {STAGES.map((s) => (
           <button
             key={s}
             className={`stage-tab${s === currentStage ? ' stage-tab--active' : ''}`}
@@ -105,8 +117,14 @@ export default function Visualizer({ viz, onStageChange, onSeamChange, onPlayTog
         speed={speed}
         onPrev={handlePrev}
         onNext={handleNext}
-        onFirst={() => { onSeamChange(0); onStageChange('image'); }}
-        onLast={() => { onSeamChange(totalSeams - 1); onStageChange('seam'); }}
+        onFirst={() => {
+          onSeamChange(0);
+          onStageChange('image');
+        }}
+        onLast={() => {
+          onSeamChange(totalSeams - 1);
+          onStageChange('seam');
+        }}
         onPlayToggle={onPlayToggle}
         onSpeedCycle={onSpeedCycle}
       />

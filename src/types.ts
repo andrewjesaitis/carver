@@ -59,7 +59,7 @@ export interface EngineRuns {
 export type VisualizerStage = 'image' | 'energy' | 'cost' | 'seam';
 
 export interface KernelSample {
-  pixels: number[];   // 3×3 luminance values, row-major, centered on seam midpoint
+  pixels: number[]; // 3×3 luminance values, row-major, centered on seam midpoint
   gx: number;
   gy: number;
   magnitude: number;
@@ -70,16 +70,16 @@ export interface KernelSample {
 export type CostDir = 'left' | 'up' | 'right';
 
 export interface CostDetailSample {
-  costs: number[];    // row-major grid of cumulative costs, size = gridWidth × gridHeight
-  arrowDirs: CostDir[];  // parent-pointer direction per cell
+  costs: number[]; // row-major grid of cumulative costs, size = gridWidth × gridHeight
+  arrowDirs: CostDir[]; // parent-pointer direction per cell
   gridWidth: number;
   gridHeight: number;
-  minIndex: number;   // index of the minimum cell within this grid
+  minIndex: number; // index of the minimum cell within this grid
 }
 
 // Worker-internal snapshot — never posted directly; use VisualizeFrameMsg for transfer.
 export interface VisualizerFrame {
-  seam: number;       // 0-indexed
+  seam: number; // 0-indexed
   imageData: ImageData;
   energyMap: ImageData;
   costHeatmap: ImageData;

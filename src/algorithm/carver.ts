@@ -1,4 +1,14 @@
-import type { Orientation, Derivative, Seam, CostMatrix, CostCell, VisualizerFrame, KernelSample, CostDetailSample, CostDir } from '../types';
+import type {
+  Orientation,
+  Derivative,
+  Seam,
+  CostMatrix,
+  CostCell,
+  VisualizerFrame,
+  KernelSample,
+  CostDetailSample,
+  CostDir,
+} from '../types';
 
 function copyImageData(src: ImageData): ImageData {
   const copy = new ImageData(src.width, src.height);
@@ -361,14 +371,20 @@ function extractCostDetail(costMatrix: CostMatrix, orientation: Orientation): Co
     let minCost = Infinity;
     for (let x = 0; x < w; x++) {
       const c = costMatrix[x][minY].current.cost;
-      if (c < minCost) { minCost = c; minX = x; }
+      if (c < minCost) {
+        minCost = c;
+        minX = x;
+      }
     }
   } else {
     minX = w - 1;
     let minCost = Infinity;
     for (let y = 0; y < h; y++) {
       const c = costMatrix[minX][y].current.cost;
-      if (c < minCost) { minCost = c; minY = y; }
+      if (c < minCost) {
+        minCost = c;
+        minY = y;
+      }
     }
   }
 
