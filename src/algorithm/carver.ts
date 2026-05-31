@@ -385,9 +385,13 @@ function extractCostDetail(costMatrix: CostMatrix, orientation: Orientation): Co
       costs.push(cell.current.cost);
       if (!cell.minNeighbor) {
         arrowDirs.push('up');
-      } else {
+      } else if (orientation === 'vertical') {
         const ndx = cell.minNeighbor.x - cell.current.x;
         arrowDirs.push(ndx < 0 ? 'left' : ndx > 0 ? 'right' : 'up');
+      } else {
+        // horizontal seam: parent variation is in y
+        const ndy = cell.minNeighbor.y - cell.current.y;
+        arrowDirs.push(ndy < 0 ? 'left' : ndy > 0 ? 'right' : 'up');
       }
     }
   }
