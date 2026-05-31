@@ -1,5 +1,8 @@
 import React, { useEffect, useReducer, useRef, useCallback } from 'react';
-import type { Engine, ResizeRequest, ResizeResponse, ResizeError, WasmStatus } from '../types';
+import type {
+  Engine, ResizeRequest, ResizeResponse, ResizeError, WasmStatus,
+  VisualizeInit, VisualizeSeek, VisualizeReady, VisualizeFrameMsg, VisualizerFrame,
+} from '../types';
 import Masthead from './Masthead';
 import Controls from './Controls';
 import CanvasTabs from './CanvasTabs';
@@ -18,6 +21,7 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wasmWorkerRef = useRef<Worker | null>(null);
   const tsWorkerRef = useRef<Worker | null>(null);
+  const vizWorkerRef = useRef<Worker | null>(null);
   const tickerStartRef = useRef<{ wasm: number; ts: number }>({ wasm: 0, ts: 0 });
 
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -92,6 +96,60 @@ export default function App() {
     }, 100);
     return () => window.clearInterval(interval);
   }, [state.runs.wasm.status, state.runs.ts.status]);
+
+  const { imageData: currentImageData, derivative: currentDerivative, targetWidth: currentTargetWidth, targetHeight: currentTargetHeight } = state;
+
+  useEffect(() => {
+    if (state.runs.ts.status !== 'done' || !currentImageData) return;
+
+    const vizWorker = new Worker(new URL('../worker/carver.worker.ts', import.meta.url), {
+      type: 'module',
+      name: 'carver-viz',
+    });
+
+    vizWorker.onmessage = (e: MessageEvent<VisualizeReady | VisualizeFrameMsg>) => {
+      const msg = e.data;
+      if (msg.type === 'VISUALIZE_READY') {
+        dispatch({ type: 'VISUALIZE_READY', totalSeams: msg.totalSeams });
+        vizWorker.postMessage({ type: 'VISUALIZE_SEEK', seam: 0 } satisfies VisualizeSeek);
+        return;
+      }
+      if (msg.type === 'VISUALIZE_FRAME') {
+        const frame: VisualizerFrame = {
+          seam: msg.seam,
+          imageData: new ImageData(new Uint8ClampedArray(msg.imageBuffer), msg.width, msg.height),
+          energyMap: new ImageData(new Uint8ClampedArray(msg.energyBuffer), msg.width, msg.height),
+          costHeatmap: new ImageData(new Uint8ClampedArray(msg.costBuffer), msg.width, msg.height),
+          seamPath: msg.seamPath,
+          kernelSample: msg.kernelSample,
+          costDetail: msg.costDetail,
+        };
+        dispatch({ type: 'VISUALIZE_FRAME', frame });
+      }
+    };
+
+    vizWorkerRef.current = vizWorker;
+
+    const req: VisualizeInit = {
+      type: 'VISUALIZE_INIT',
+      buffer: cloneBuffer(currentImageData.data),
+      width: currentImageData.width,
+      height: currentImageData.height,
+      derivative: currentDerivative,
+      targetWidth: currentTargetWidth,
+      targetHeight: currentTargetHeight,
+    };
+    vizWorker.postMessage(req, [req.buffer]);
+
+    return () => vizWorker.terminate();
+  }, [state.runs.ts.status]); // intentionally narrow — fires once per TS carve completion
+
+  useEffect(() => {
+    if (state.viz.status !== 'ready' || !vizWorkerRef.current) return;
+    vizWorkerRef.current.postMessage(
+      { type: 'VISUALIZE_SEEK', seam: state.viz.currentSeam } satisfies VisualizeSeek,
+    );
+  }, [state.viz.currentSeam, state.viz.status]);
 
   const handleSample = useCallback((key: 'balloon' | 'tower') => {
     urlToImageData(`${import.meta.env.BASE_URL}samples/${key}.jpg`)
