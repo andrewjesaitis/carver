@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import type { CSSProperties } from 'react';
 import type { VisualizerStage } from '../types';
 import type { VizState } from './reducer';
 import VisualizerCanvas from './VisualizerCanvas';
@@ -21,6 +22,8 @@ const CAPTIONS: Record<VisualizerStage, string> = {
 
 interface Props {
   viz: VizState;
+  originalWidth: number;
+  originalHeight: number;
   onStageChange: (stage: VisualizerStage) => void;
   onSeamChange: (seam: number) => void;
   onPlayToggle: () => void;
@@ -29,6 +32,8 @@ interface Props {
 
 export default function Visualizer({
   viz,
+  originalWidth,
+  originalHeight,
   onStageChange,
   onSeamChange,
   onPlayToggle,
@@ -85,6 +90,20 @@ export default function Visualizer({
         : frame.imageData;
   const showSeam = currentStage === 'seam';
 
+  // Reserve the canvas area at the ORIGINAL image's aspect ratio so the box
+  // height stays constant as the image is carved narrower/shorter. The current
+  // frame renders at its fraction of the original, anchored top-left, so the
+  // shrinking is visible without shifting the controls below on every frame.
+  const canvasAreaStyle: CSSProperties = {
+    width: '100%',
+    maxWidth: `${originalWidth}px`,
+    aspectRatio: `${originalWidth} / ${originalHeight}`,
+  };
+  const canvasStyle: CSSProperties = {
+    width: `${(activeImageData.width / originalWidth) * 100}%`,
+    height: `${(activeImageData.height / originalHeight) * 100}%`,
+  };
+
   return (
     <section className="visualizer">
       <div className="visualizer-label">how seam carving works</div>
@@ -100,13 +119,13 @@ export default function Visualizer({
         ))}
       </div>
       <div className="visualizer-body">
-        <div className="visualizer-canvas-wrap">
+        <div className="visualizer-canvas-wrap" style={canvasAreaStyle}>
           <VisualizerCanvas
             imageData={activeImageData}
             seamPath={showSeam ? frame.seamPath : undefined}
+            style={canvasStyle}
           />
         </div>
-        <StageInspector stage={currentStage} frame={frame} />
       </div>
       <p className="visualizer-caption">{CAPTIONS[currentStage]}</p>
       <PlaybackControls
@@ -128,6 +147,9 @@ export default function Visualizer({
         onPlayToggle={onPlayToggle}
         onSpeedCycle={onSpeedCycle}
       />
+      <div className="visualizer-inspector">
+        <StageInspector stage={currentStage} frame={frame} />
+      </div>
     </section>
   );
 }

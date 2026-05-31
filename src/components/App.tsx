@@ -302,6 +302,8 @@ export default function App() {
       <TimingPanel runs={state.runs} wasmAvailable={state.wasm === 'available'} />
       <Visualizer
         viz={state.viz}
+        originalWidth={state.imageData?.width ?? 0}
+        originalHeight={state.imageData?.height ?? 0}
         onStageChange={handleStageChange}
         onSeamChange={handleSeamChange}
         onPlayToggle={handlePlayToggle}

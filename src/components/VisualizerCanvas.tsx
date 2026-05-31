@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import type { Seam } from '../types';
 
 interface Props {
   imageData: ImageData;
   seamPath?: Seam;
+  style?: CSSProperties;
 }
 
-export default function VisualizerCanvas({ imageData, seamPath }: Props) {
+export default function VisualizerCanvas({ imageData, seamPath, style }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -31,5 +33,5 @@ export default function VisualizerCanvas({ imageData, seamPath }: Props) {
     }
   }, [imageData, seamPath]);
 
-  return <canvas ref={canvasRef} className="visualizer-canvas" />;
+  return <canvas ref={canvasRef} className="visualizer-canvas" style={style} />;
 }
