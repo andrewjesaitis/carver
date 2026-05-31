@@ -1,4 +1,4 @@
-import type { Orientation, Derivative, Seam, CostMatrix, CostCell } from '../types';
+import type { Orientation, Derivative, Seam, CostMatrix, CostCell, VisualizerFrame, KernelSample, CostDetailSample, CostDir } from '../types';
 
 function copyImageData(src: ImageData): ImageData {
   const copy = new ImageData(src.width, src.height);
@@ -218,7 +218,7 @@ function getRightEdgeMin(costMatrix: CostMatrix): CostCell {
   return costMatrix[lastColIdx].reduce((a, b) => (a.current.cost < b.current.cost ? a : b));
 }
 
-function computeSeam(orientation: Orientation, costMatrix: CostMatrix): Seam {
+export function computeSeam(orientation: Orientation, costMatrix: CostMatrix): Seam {
   const minCost =
     orientation === 'vertical' ? getBottomEdgeMin(costMatrix) : getRightEdgeMin(costMatrix);
   let { x, y } = minCost.current;
@@ -282,6 +282,137 @@ export function ripSeam(seam: Seam, orientation: Orientation, imgData: ImageData
     }
   }
   return new ImageData(tgt8, w, h);
+}
+
+function heatmapColor(t: number): [number, number, number] {
+  // 4-stop ramp: black(0) → dark blue(0.33) → yellow(0.67) → red(1)
+  if (t < 0.33) {
+    const s = t / 0.33;
+    return [0, 0, Math.round(128 * s)];
+  }
+  if (t < 0.67) {
+    const s = (t - 0.33) / 0.34;
+    return [Math.round(255 * s), Math.round(200 * s), Math.round(128 * (1 - s))];
+  }
+  const s = (t - 0.67) / 0.33;
+  return [255, Math.round(200 * (1 - s)), 0];
+}
+
+function renderCostHeatmap(costMatrix: CostMatrix, w: number, h: number): ImageData {
+  let minCost = Infinity;
+  let maxCost = -Infinity;
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      const c = costMatrix[x][y].current.cost;
+      if (c < minCost) minCost = c;
+      if (c > maxCost) maxCost = c;
+    }
+  }
+  const range = maxCost - minCost || 1;
+  const buf = new ArrayBuffer(w * h * 4);
+  const view = new Uint8ClampedArray(buf);
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      const t = (costMatrix[x][y].current.cost - minCost) / range;
+      const [r, g, b] = heatmapColor(t);
+      const idx = (y * w + x) * 4;
+      view[idx] = r;
+      view[idx + 1] = g;
+      view[idx + 2] = b;
+      view[idx + 3] = 255;
+    }
+  }
+  return new ImageData(view, w, h);
+}
+
+function extractKernelSample(gs: ImageData, seam: Seam): KernelSample {
+  const mid = seam[Math.floor(seam.length / 2)];
+  const { x, y } = mid;
+  const w = gs.width;
+  const pixels: number[] = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = Math.max(0, Math.min(w - 1, x + dx));
+      const ny = Math.max(0, Math.min(gs.height - 1, y + dy));
+      pixels.push(gs.data[(ny * w + nx) * 4]); // R channel = luminance
+    }
+  }
+  // Sobel Gx and Gy (flat row-major, matches carver.ts kernelX/kernelY)
+  const kx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+  const ky = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+  let gx = 0;
+  let gy = 0;
+  for (let i = 0; i < 9; i++) {
+    gx += kx[i] * pixels[i];
+    gy += ky[i] * pixels[i];
+  }
+  const magnitude = Math.sqrt(gx * gx + gy * gy) & 0xff;
+  return { pixels, gx, gy, magnitude, centerX: x, centerY: y };
+}
+
+function extractCostDetail(costMatrix: CostMatrix, orientation: Orientation): CostDetailSample {
+  const w = costMatrix.length;
+  const h = costMatrix[0].length;
+  let minX = 0;
+  let minY = 0;
+
+  if (orientation === 'vertical') {
+    minY = h - 1;
+    let minCost = Infinity;
+    for (let x = 0; x < w; x++) {
+      const c = costMatrix[x][minY].current.cost;
+      if (c < minCost) { minCost = c; minX = x; }
+    }
+  } else {
+    minX = w - 1;
+    let minCost = Infinity;
+    for (let y = 0; y < h; y++) {
+      const c = costMatrix[minX][y].current.cost;
+      if (c < minCost) { minCost = c; minY = y; }
+    }
+  }
+
+  const HALF = 3;
+  const GRID = 2 * HALF + 1; // 7
+  const costs: number[] = [];
+  const arrowDirs: CostDir[] = [];
+
+  for (let dy = -HALF; dy <= HALF; dy++) {
+    for (let dx = -HALF; dx <= HALF; dx++) {
+      const cx = Math.max(0, Math.min(w - 1, minX + dx));
+      const cy = Math.max(0, Math.min(h - 1, minY + dy));
+      const cell = costMatrix[cx][cy];
+      costs.push(cell.current.cost);
+      if (!cell.minNeighbor) {
+        arrowDirs.push('up');
+      } else {
+        const ndx = cell.minNeighbor.x - cell.current.x;
+        arrowDirs.push(ndx < 0 ? 'left' : ndx > 0 ? 'right' : 'up');
+      }
+    }
+  }
+
+  return { costs, arrowDirs, gridWidth: GRID, gridHeight: GRID, minIndex: HALF * GRID + HALF };
+}
+
+function buildFrame(
+  img: ImageData,
+  grad: ImageData,
+  costMatrix: CostMatrix,
+  seam: Seam,
+  seamIndex: number,
+  orientation: Orientation,
+): VisualizerFrame {
+  const gs = greyscale(img);
+  return {
+    seam: seamIndex,
+    imageData: copyImageData(img),
+    energyMap: copyImageData(grad),
+    costHeatmap: renderCostHeatmap(costMatrix, img.width, img.height),
+    seamPath: seam,
+    kernelSample: extractKernelSample(gs, seam),
+    costDetail: extractCostDetail(costMatrix, orientation),
+  };
 }
 
 /**
