@@ -21,7 +21,7 @@ function makeRequest(engine: 'ts' | 'wasm'): DispatchRequest {
 
 describe('dispatchResize', () => {
   test("runs TS when engine='ts'", () => {
-    const wasm = vi.fn<Parameters<WasmResize>, ReturnType<WasmResize>>();
+    const wasm = vi.fn<WasmResize>();
     const result = dispatchResize(makeRequest('ts'), wasm);
     expect(result.engineUsed).toBe('ts');
     expect(wasm).not.toHaveBeenCalled();
@@ -31,7 +31,7 @@ describe('dispatchResize', () => {
 
   test("runs WASM when engine='wasm' and wasm is provided", () => {
     const wasmOutput = new Uint8Array(3 * 3 * 4);
-    const wasm = vi.fn<Parameters<WasmResize>, ReturnType<WasmResize>>(() => wasmOutput);
+    const wasm = vi.fn<WasmResize>(() => wasmOutput);
     const result = dispatchResize(makeRequest('wasm'), wasm);
     expect(result.engineUsed).toBe('wasm');
     expect(wasm).toHaveBeenCalledOnce();
@@ -48,7 +48,7 @@ describe('dispatchResize', () => {
   });
 
   test('propagates errors thrown by the WASM engine', () => {
-    const wasm = vi.fn<Parameters<WasmResize>, ReturnType<WasmResize>>(() => {
+    const wasm = vi.fn<WasmResize>(() => {
       throw new Error('wasm boom');
     });
     expect(() => dispatchResize(makeRequest('wasm'), wasm)).toThrow('wasm boom');
