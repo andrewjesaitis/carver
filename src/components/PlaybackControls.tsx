@@ -37,26 +37,35 @@ export default function PlaybackControls({
   return (
     <div className="playback-controls">
       <div className="playback-nav">
-        <button onClick={onFirst} aria-label="first seam">
+        <button onClick={onFirst} aria-label="first seam" title="Jump to first seam">
           ⏮
         </button>
-        <button onClick={onPrev} aria-label="previous">
+        <button onClick={onPrev} aria-label="previous" title="Previous stage">
           ←
         </button>
-        <button onClick={onPlayToggle} aria-label={isPlaying ? 'pause' : 'play'}>
+        <button
+          onClick={onPlayToggle}
+          aria-label={isPlaying ? 'pause' : 'play'}
+          title={isPlaying ? 'Pause' : 'Play through every stage and seam'}
+        >
           {isPlaying ? '⏸' : '▶'}
         </button>
-        <button onClick={onNext} aria-label="next">
+        <button onClick={onNext} aria-label="next" title="Next stage">
           →
         </button>
-        <button onClick={onLast} aria-label="last seam">
+        <button onClick={onLast} aria-label="last seam" title="Jump to last seam">
           ⏭
         </button>
       </div>
       <div className="playback-counter">
         stage {STAGE_NUM[currentStage]}/4 · seam {currentSeam + 1}/{totalSeams}
       </div>
-      <button className="playback-speed" onClick={onSpeedCycle} aria-label="cycle speed">
+      <button
+        className="playback-speed"
+        onClick={onSpeedCycle}
+        aria-label="cycle speed"
+        title="Playback speed — click to cycle"
+      >
         {speed}×
       </button>
     </div>

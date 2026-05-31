@@ -19,6 +19,12 @@ const CAPTIONS: Record<VisualizerStage, string> = {
   cost: 'Each cell stores the cheapest path from the top edge. The bottom row reveals where to start the seam.',
   seam: 'The lowest-cost path from top to bottom. These pixels are removed, shifting everything else one column inward.',
 };
+const STAGE_TOOLTIPS: Record<VisualizerStage, string> = {
+  image: 'The source image at this step',
+  energy: 'Per-pixel edge strength from the Sobel gradient',
+  cost: 'Cumulative cheapest-path cost, accumulated top to bottom',
+  seam: 'The lowest-energy seam about to be removed',
+};
 
 interface Props {
   viz: VizState;
@@ -113,6 +119,7 @@ export default function Visualizer({
             key={s}
             className={`stage-tab${s === currentStage ? ' stage-tab--active' : ''}`}
             onClick={() => onStageChange(s)}
+            title={STAGE_TOOLTIPS[s]}
           >
             {STAGE_LABELS[s]}
           </button>
