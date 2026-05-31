@@ -1,0 +1,100 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      commit-subject: ${{ steps.commit_meta.outputs.subject }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: cargo install wasm-bindgen-cli --version 0.2.115 --locked
+
+      - run: pnpm build
+
+      - name: Get commit metadata
+        id: commit_meta
+        env:
+          COMMIT_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          subject=$(git log -1 --pretty=%s "$COMMIT_SHA")
+          echo "subject=$subject" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/carver/
+          retention-days: 1
+
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/carver/
+
+      - name: Create Pages project (no-op if already exists)
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create carver-demo --production-branch=main
+
+      - name: Deploy (production)
+        if: github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy dist
+            --project-name=carver-demo
+            --branch=main
+            --commit-hash=${{ github.sha }}
+            --commit-message=${{ toJSON(needs.build.outputs.commit-subject) }}
+
+      - name: Deploy (preview)
+        if: github.event_name == 'pull_request'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy dist
+            --project-name=carver-demo
+            --branch=${{ github.head_ref }}
+            --commit-hash=${{ github.event.pull_request.head.sha }}
+            --commit-message=${{ toJSON(format('PR #{0}: {1}', github.event.pull_request.number, github.event.pull_request.title)) }}

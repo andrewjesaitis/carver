@@ -14,18 +14,20 @@
     "test:rust": "cargo test -p carver-wasm",
     "lint": "oxlint src",
     "fmt": "oxfmt src",
-    "fmt:check": "oxfmt --check src"
+    "fmt:check": "oxfmt --check src",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/node": "^25.9.1",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "@vitejs/plugin-react": "^4.0.0",
     "jsdom": "^24.0.0",
+    "oxfmt": "latest",
+    "oxlint": "latest",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
-    "vitest": "^1.0.0",
-    "oxlint": "latest",
-    "oxfmt": "latest"
+    "vitest": "^1.0.0"
   },
   "dependencies": {
     "react": "^18.0.0",

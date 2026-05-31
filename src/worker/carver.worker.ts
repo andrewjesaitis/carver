@@ -16,7 +16,7 @@ init(wasmUrl)
     wasm = wasmResize;
     self.postMessage({ type: 'WASM_STATUS', available: true } satisfies WasmStatus);
   })
-  .catch((err) => {
+  .catch((err: unknown) => {
     console.error('[carver-worker] WASM init failed:', err);
     self.postMessage({ type: 'WASM_STATUS', available: false } satisfies WasmStatus);
   });

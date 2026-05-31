@@ -77,7 +77,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    urlToImageData('/samples/balloon.jpg')
+    urlToImageData(`${import.meta.env.BASE_URL}samples/balloon.jpg`)
       .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: 'balloon' }))
       .catch((err: Error) => dispatch({ type: 'IMAGE_LOAD_ERROR', message: err.message }));
   }, []);
@@ -94,7 +94,7 @@ export default function App() {
   }, [state.runs.wasm.status, state.runs.ts.status]);
 
   const handleSample = useCallback((key: 'balloon' | 'tower') => {
-    urlToImageData(`/samples/${key}.jpg`)
+    urlToImageData(`${import.meta.env.BASE_URL}samples/${key}.jpg`)
       .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: key }))
       .catch((err: Error) => dispatch({ type: 'IMAGE_LOAD_ERROR', message: err.message }));
   }, []);
