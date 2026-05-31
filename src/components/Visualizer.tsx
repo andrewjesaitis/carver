@@ -13,11 +13,14 @@ const STAGE_LABELS: Record<VisualizerStage, string> = {
   cost: 'iii. cost',
   seam: 'iv. seam',
 };
+// Short one-liners shown above the controls (reserved height keeps the controls
+// from shifting between stages). The fuller, derivative-specific explanation
+// lives in the detail pane below the controls.
 const CAPTIONS: Record<VisualizerStage, string> = {
-  image: 'The current image, before this seam is removed.',
-  energy: 'High energy = edge. Low energy = smooth texture. The seam avoids high-energy pixels.',
-  cost: 'Each cell stores the cheapest path from the top edge. The bottom row reveals where to start the seam.',
-  seam: 'The lowest-cost path from top to bottom. These pixels are removed, shifting everything else one column inward.',
+  image: 'The current image at this step, before the next seam is removed.',
+  energy: 'Edge strength — how sharply each pixel differs from its neighbours.',
+  cost: 'The cheapest top-to-bottom path cost accumulated into every pixel.',
+  seam: 'The lowest-energy seam — the pixels about to be removed.',
 };
 const STAGE_TOOLTIPS: Record<VisualizerStage, string> = {
   image: 'The source image at this step',
@@ -165,7 +168,7 @@ export default function Visualizer({
         onSpeedCycle={onSpeedCycle}
       />
       <div className="visualizer-inspector">
-        <StageInspector stage={currentStage} frame={frame} />
+        <StageInspector stage={currentStage} frame={frame} derivative={viz.derivative} />
       </div>
     </section>
   );

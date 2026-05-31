@@ -320,6 +320,7 @@ describe('viz reducer', () => {
     const s: UiState = {
       ...initialState,
       wasm: 'available',
+      derivative: 'simple',
       viz: {
         status: 'ready',
         totalSeams: 10,
@@ -328,12 +329,15 @@ describe('viz reducer', () => {
         frame: makeVizFrame(),
         isPlaying: false,
         speed: 1,
+        derivative: 'sobel',
       },
     };
     const next = reducer(s, { type: 'CARVE_STARTED' });
     expect(next.viz.status).toBe('computing');
     expect(next.viz.currentSeam).toBe(0);
     expect(next.viz.frame).toBeNull();
+    // viz.derivative is captured from the carve's selected gradient.
+    expect(next.viz.derivative).toBe('simple');
   });
 
   test('VISUALIZE_READY sets status to ready and totalSeams', () => {

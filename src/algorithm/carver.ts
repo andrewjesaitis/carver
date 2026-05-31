@@ -335,7 +335,7 @@ function renderCostHeatmap(costMatrix: CostMatrix, w: number, h: number): ImageD
   return new ImageData(view, w, h);
 }
 
-function extractKernelSample(gs: ImageData, seam: Seam): KernelSample {
+function extractKernelSample(gs: ImageData, seam: Seam, derivative: Derivative): KernelSample {
   const mid = seam[Math.floor(seam.length / 2)];
   const { x, y } = mid;
   const w = gs.width;
@@ -347,14 +347,25 @@ function extractKernelSample(gs: ImageData, seam: Seam): KernelSample {
       pixels.push(gs.data[(ny * w + nx) * 4]); // R channel = luminance
     }
   }
-  // Sobel Gx and Gy (flat row-major, matches carver.ts kernelX/kernelY)
-  const kx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
-  const ky = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
-  let gx = 0;
-  let gy = 0;
-  for (let i = 0; i < 9; i++) {
-    gx += kx[i] * pixels[i];
-    gy += ky[i] * pixels[i];
+  // gx/gy carry whichever operator the carve actually used so the detail pane
+  // matches the rendered energy map. pixels indices are row-major: 3 = left
+  // neighbour, 1 = upper neighbour, 4 = centre.
+  let gx: number;
+  let gy: number;
+  if (derivative === 'simple') {
+    // Forward differences: centre minus its left and upper neighbours (Δx, Δy).
+    gx = pixels[4] - pixels[3];
+    gy = pixels[4] - pixels[1];
+  } else {
+    // Sobel: weighted 3×3 over all neighbours (flat row-major kernelX/kernelY).
+    const kx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+    const ky = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+    gx = 0;
+    gy = 0;
+    for (let i = 0; i < 9; i++) {
+      gx += kx[i] * pixels[i];
+      gy += ky[i] * pixels[i];
+    }
   }
   const magnitude = Math.sqrt(gx * gx + gy * gy) & 0xff;
   return { pixels, gx, gy, magnitude, centerX: x, centerY: y };
@@ -422,6 +433,7 @@ function buildFrame(
   seam: Seam,
   seamIndex: number,
   orientation: Orientation,
+  derivative: Derivative,
 ): VisualizerFrame {
   const gs = greyscale(img);
   return {
@@ -430,7 +442,7 @@ function buildFrame(
     energyMap: copyImageData(grad),
     costHeatmap: renderCostHeatmap(costMatrix, img.width, img.height),
     seamPath: seam,
-    kernelSample: extractKernelSample(gs, seam),
+    kernelSample: extractKernelSample(gs, seam, derivative),
     costDetail: extractCostDetail(costMatrix, orientation),
   };
 }
@@ -453,7 +465,7 @@ export function* resizeSteps(
   while (img.width > width) {
     const costMatrix = computeCostMatrix(grad, 'vertical');
     const seam = computeSeam('vertical', costMatrix);
-    yield buildFrame(img, grad, costMatrix, seam, seamIndex, 'vertical');
+    yield buildFrame(img, grad, costMatrix, seam, seamIndex, 'vertical', derivative);
     img = ripSeam(seam, 'vertical', img);
     grad = ripSeam(seam, 'vertical', grad);
     seamIndex++;
@@ -462,7 +474,7 @@ export function* resizeSteps(
   while (img.height > height) {
     const costMatrix = computeCostMatrix(grad, 'horizontal');
     const seam = computeSeam('horizontal', costMatrix);
-    yield buildFrame(img, grad, costMatrix, seam, seamIndex, 'horizontal');
+    yield buildFrame(img, grad, costMatrix, seam, seamIndex, 'horizontal', derivative);
     img = ripSeam(seam, 'horizontal', img);
     grad = ripSeam(seam, 'horizontal', grad);
     seamIndex++;

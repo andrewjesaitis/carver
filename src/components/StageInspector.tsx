@@ -1,14 +1,16 @@
-import type { VisualizerStage, VisualizerFrame } from '../types';
-import KernelDetail from './KernelDetail';
+import type { VisualizerStage, VisualizerFrame, Derivative } from '../types';
+import EnergyDetail from './EnergyDetail';
 import CostDetail from './CostDetail';
 
 interface Props {
   stage: VisualizerStage;
   frame: VisualizerFrame;
+  derivative: Derivative;
 }
 
-export default function StageInspector({ stage, frame }: Props) {
+export default function StageInspector({ stage, frame, derivative }: Props) {
   if (stage === 'image' || stage === 'seam') return null;
-  if (stage === 'energy') return <KernelDetail sample={frame.kernelSample} />;
+  if (stage === 'energy')
+    return <EnergyDetail sample={frame.kernelSample} derivative={derivative} />;
   return <CostDetail detail={frame.costDetail} />;
 }

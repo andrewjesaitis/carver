@@ -15,6 +15,8 @@ export interface VizState {
   frame: VisualizerFrame | null;
   isPlaying: boolean;
   speed: 0.5 | 1 | 2 | 4;
+  // The gradient operator the carve used — drives the energy stage explanation.
+  derivative: Derivative;
 }
 
 const initialVizState: VizState = {
@@ -25,6 +27,7 @@ const initialVizState: VizState = {
   frame: null,
   isPlaying: false,
   speed: 1,
+  derivative: 'sobel',
 };
 
 export type SampleKey = 'balloon' | 'tower' | 'upload';
@@ -127,7 +130,7 @@ export function reducer(state: UiState, action: Action): UiState {
               : { status: 'unavailable', elapsedMs: null, tickerMs: null, errorMessage: null },
           ts: { status: 'running', elapsedMs: null, tickerMs: 0, errorMessage: null },
         },
-        viz: { ...initialVizState, status: 'computing' },
+        viz: { ...initialVizState, status: 'computing', derivative: state.derivative },
       };
     case 'TICK':
       if (state.runs[action.engine].status !== 'running') return state;

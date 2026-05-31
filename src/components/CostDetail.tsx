@@ -6,6 +6,12 @@ const ARROW: Record<CostDir, string> = {
   right: '↗',
 };
 
+const COST_DESC =
+  'Scanning top to bottom, each pixel stores its own energy plus the smallest accumulated cost ' +
+  'among the three pixels directly above it. By the bottom row, every cell holds the total cost ' +
+  'of the cheapest seam ending there; the arrows point back to the parent that produced it. ' +
+  'The marked cell is the lowest-cost endpoint — where the seam traceback begins.';
+
 interface Props {
   detail: CostDetailSample;
 }
@@ -18,6 +24,7 @@ export default function CostDetail({ detail }: Props) {
 
   return (
     <div className="cost-detail">
+      <p className="detail-description">{COST_DESC}</p>
       <div className="cost-detail-label">cost matrix (seam edge)</div>
       <div className="cost-grid" style={{ gridTemplateColumns: `repeat(${gridWidth}, 1fr)` }}>
         {costs.map((cost, i) => {
