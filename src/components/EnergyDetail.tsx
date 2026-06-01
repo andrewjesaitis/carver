@@ -3,15 +3,23 @@ import type { KernelSample, Derivative } from '../types';
 const SIMPLE_DESC =
   'The energy of an image is how rapidly brightness changes at each pixel. Working on the ' +
   'greyscale image, we measure how much the highlighted pixel differs from its left neighbour ' +
-  '(Δx) and its upper neighbour (Δy), then combine them as E = √(Δx² + Δy²). Clamped to 0–255, ' +
-  'this builds a greyscale map whose brightest pixels trace the edges of objects in the scene.';
+  '(Δx) and its upper neighbour (Δy) — the forward-difference kernels Gx and Gy below. We ' +
+  'combine them as E = √(Δx² + Δy²). Clamped to 0–255, this builds a greyscale map whose ' +
+  'brightest pixels trace the edges of objects in the scene.';
 
 const SOBEL_DESC =
   'The energy of an image is how rapidly brightness changes at each pixel. Working on the ' +
-  'greyscale image, the Sobel operator estimates the horizontal (Gx) and vertical (Gy) gradient ' +
-  'with a weighted 3×3 kernel over all eight neighbours — nearer pixels count more, which ' +
-  'suppresses noise. Combined as E = √(Gx² + Gy²) and clamped to 0–255, the brightest pixels ' +
-  'trace the edges of objects in the scene.';
+  'greyscale image, the Sobel operator convolves each pixel’s 3×3 neighbourhood with the ' +
+  'kernels Gx and Gy below — nearer pixels weighted ×2, which suppresses noise. We combine the ' +
+  'two responses as E = √(Gx² + Gy²). Clamped to 0–255, the brightest pixels trace the edges of ' +
+  'objects in the scene.';
+
+// Convolution kernels, row-major, matching carver.ts. Simple is the
+// forward-difference stencil (centre minus left / centre minus upper).
+const SOBEL_GX = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+const SOBEL_GY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+const SIMPLE_GX = [0, 0, 0, -1, 1, 0, 0, 0, 0];
+const SIMPLE_GY = [0, -1, 0, 0, 1, 0, 0, 0, 0];
 
 // Pixel positions in the row-major 3×3 sample.
 const CENTER = 4;
@@ -21,6 +29,28 @@ const UP = 1;
 interface Props {
   sample: KernelSample;
   derivative: Derivative;
+}
+
+function KernelMatrix({ label, weights }: { label: string; weights: number[] }) {
+  return (
+    <div className="kernel-matrix">
+      <div className="kernel-matrix-label">{label}</div>
+      <div className="kernel-matrix-grid">
+        {weights.map((w, i) => (
+          <div
+            key={i}
+            className={
+              'kernel-weight' +
+              (i === CENTER ? ' kernel-weight--center' : '') +
+              (w < 0 ? ' kernel-weight--neg' : w > 0 ? ' kernel-weight--pos' : '')
+            }
+          >
+            {w}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function PixelGrid({ pixels }: { pixels: number[] }) {
@@ -138,17 +168,19 @@ function SobelDiagram({ sample }: { sample: KernelSample }) {
 
 export default function EnergyDetail({ sample, derivative }: Props) {
   const { centerX, centerY } = sample;
+  const isSimple = derivative === 'simple';
   return (
     <div className="energy-detail">
-      <p className="detail-description">{derivative === 'simple' ? SIMPLE_DESC : SOBEL_DESC}</p>
-      <div className="detail-diagram-label">
-        kernel at ({centerX}, {centerY})
+      <p className="detail-description">{isSimple ? SIMPLE_DESC : SOBEL_DESC}</p>
+      <div className="detail-diagram-label">{isSimple ? 'Difference kernels' : 'Sobel kernels'}</div>
+      <div className="kernel-matrices">
+        <KernelMatrix label="Gx" weights={isSimple ? SIMPLE_GX : SOBEL_GX} />
+        <KernelMatrix label="Gy" weights={isSimple ? SIMPLE_GY : SOBEL_GY} />
       </div>
-      {derivative === 'simple' ? (
-        <SimpleDiagram sample={sample} />
-      ) : (
-        <SobelDiagram sample={sample} />
-      )}
+      <div className="detail-diagram-label">
+        sample at ({centerX}, {centerY})
+      </div>
+      {isSimple ? <SimpleDiagram sample={sample} /> : <SobelDiagram sample={sample} />}
     </div>
   );
 }

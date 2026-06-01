@@ -394,6 +394,60 @@ body {
   color: var(--fg-muted);
 }
 
+/* Gradient kernel weight matrices */
+.kernel-matrices {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.kernel-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.kernel-matrix-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #151515;
+  font-variant-numeric: tabular-nums;
+}
+
+.kernel-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1.6rem);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.kernel-weight {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  background: #fff;
+  color: #767676;
+  font-variant-numeric: tabular-nums;
+}
+
+.kernel-weight--pos {
+  color: #1a6c2e;
+}
+
+.kernel-weight--neg {
+  color: #b22222;
+}
+
+.kernel-weight--center {
+  outline: 2px solid #e6a800;
+  outline-offset: -2px;
+}
+
 .energy-diagram {
   display: flex;
   gap: 1.25rem;
@@ -493,6 +547,18 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--fg-muted);
+}
+
+.cost-formula {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: #151515;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.5rem 0.6rem;
+  overflow-x: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .cost-grid {
