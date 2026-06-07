@@ -84,6 +84,7 @@ self.onmessage = (event: MessageEvent<ResizeRequest | VisualizeInit | VisualizeS
         type: 'VISUALIZE_FRAME',
         seam: frame.seam,
         imageBuffer: frame.imageData.data.buffer,
+        greyscaleBuffer: frame.greyscaleMap.data.buffer,
         energyBuffer: frame.energyMap.data.buffer,
         costBuffer: frame.costHeatmap.data.buffer,
         width: frame.imageData.width,
@@ -94,6 +95,7 @@ self.onmessage = (event: MessageEvent<ResizeRequest | VisualizeInit | VisualizeS
       };
       self.postMessage(response, [
         response.imageBuffer,
+        response.greyscaleBuffer,
         response.energyBuffer,
         response.costBuffer,
       ]);

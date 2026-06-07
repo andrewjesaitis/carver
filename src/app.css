@@ -235,6 +235,15 @@ body {
   margin-bottom: 0.75rem;
 }
 
+/* High-level overview shown above the step-through, in every state. */
+.visualizer-intro {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--fg);
+  max-width: 65ch;
+  margin: 0 0 1.5rem;
+}
+
 .visualizer-placeholder {
   color: var(--fg-muted);
   font-size: 0.875rem;

@@ -2,10 +2,12 @@ import type { VisualizerStage } from '../types';
 
 const STAGE_NUM: Record<VisualizerStage, number> = {
   image: 1,
-  energy: 2,
-  cost: 3,
-  seam: 4,
+  greyscale: 2,
+  energy: 3,
+  cost: 4,
+  seam: 5,
 };
+const STAGE_COUNT = Object.keys(STAGE_NUM).length;
 
 interface Props {
   currentSeam: number;
@@ -58,7 +60,7 @@ export default function PlaybackControls({
         </button>
       </div>
       <div className="playback-counter">
-        stage {STAGE_NUM[currentStage]}/4 · seam {currentSeam + 1}/{totalSeams}
+        stage {STAGE_NUM[currentStage]}/{STAGE_COUNT} · seam {currentSeam + 1}/{totalSeams}
       </div>
       <button
         className="playback-speed"

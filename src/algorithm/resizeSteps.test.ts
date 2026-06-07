@@ -41,6 +41,7 @@ describe('resizeSteps', () => {
   it('each frame has populated fields', () => {
     const [frame] = resizeSteps(makeImage(10, 8), 'sobel', 9, 8);
     expect(frame.imageData.width).toBe(10);
+    expect(frame.greyscaleMap.width).toBe(10);
     expect(frame.energyMap.width).toBe(10);
     expect(frame.costHeatmap.width).toBe(10);
     expect(frame.seamPath.length).toBeGreaterThan(0);

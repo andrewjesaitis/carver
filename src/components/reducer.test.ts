@@ -289,6 +289,7 @@ function makeVizFrame(seam = 0): VisualizerFrame {
   return {
     seam,
     imageData: img,
+    greyscaleMap: img,
     energyMap: img,
     costHeatmap: img,
     seamPath: [

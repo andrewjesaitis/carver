@@ -131,6 +131,11 @@ export default function App() {
         const frame: VisualizerFrame = {
           seam: msg.seam,
           imageData: new ImageData(new Uint8ClampedArray(msg.imageBuffer), msg.width, msg.height),
+          greyscaleMap: new ImageData(
+            new Uint8ClampedArray(msg.greyscaleBuffer),
+            msg.width,
+            msg.height,
+          ),
           energyMap: new ImageData(new Uint8ClampedArray(msg.energyBuffer), msg.width, msg.height),
           costHeatmap: new ImageData(new Uint8ClampedArray(msg.costBuffer), msg.width, msg.height),
           seamPath: msg.seamPath,

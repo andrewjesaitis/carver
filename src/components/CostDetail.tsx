@@ -7,14 +7,17 @@ const ARROW: Record<CostDir, string> = {
 };
 
 const COST_DESC =
-  'The cost image is built from the energy image in a single top-to-bottom pass. The first row ' +
-  'is copied straight from the energy. Every pixel below adds its own energy E to the cheapest ' +
-  'of the three cost cells directly above it:';
+  'Finding the lowest-energy seam is a dynamic-programming problem: the cheapest seam ending at ' +
+  'a pixel is that pixel’s energy plus the cheapest seam ending at one of the three pixels above ' +
+  'it. We build the cost image from the energy image in a single top-to-bottom pass, memoising ' +
+  'each subproblem’s answer. The first row is copied straight from the energy; every pixel below ' +
+  'follows the recurrence:';
 
 const COST_DESC_AFTER =
-  'By the bottom row, each cell M holds the total energy of the cheapest seam ending there. The ' +
-  'arrows point to the parent cell that won the min; the marked cell is the lowest-cost ' +
-  'endpoint — where the seam traceback begins.';
+  'Because each cell reuses the answers already computed for the row above, the whole table fills ' +
+  'in one linear pass instead of re-exploring every possible seam. By the bottom row, each cell ' +
+  'M holds the total energy of the cheapest seam ending there. The arrows point to the parent ' +
+  'that won the min; the marked cell is the lowest-cost endpoint — where the seam traceback begins.';
 
 interface Props {
   detail: CostDetailSample;

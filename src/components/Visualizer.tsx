@@ -6,25 +6,35 @@ import VisualizerCanvas from './VisualizerCanvas';
 import StageInspector from './StageInspector';
 import PlaybackControls from './PlaybackControls';
 
-const STAGES: VisualizerStage[] = ['image', 'energy', 'cost', 'seam'];
+const INTRO =
+  'Seam carving resizes an image by removing the lines of pixels — seams — that disturb it the ' +
+  'least. A seam is a connected path of pixels running edge to edge. The algorithm repeatedly ' +
+  'finds and removes the lowest-energy seam until the image reaches its target dimensions, ' +
+  'shrinking it without stretching or cropping the things your eye cares about. The steps below ' +
+  'show one such removal.';
+
+const STAGES: VisualizerStage[] = ['image', 'greyscale', 'energy', 'cost', 'seam'];
 const STAGE_LABELS: Record<VisualizerStage, string> = {
   image: 'i. image',
-  energy: 'ii. energy',
-  cost: 'iii. cost',
-  seam: 'iv. seam',
+  greyscale: 'ii. greyscale',
+  energy: 'iii. energy',
+  cost: 'iv. cost',
+  seam: 'v. seam',
 };
 // Short one-liners shown above the controls (reserved height keeps the controls
 // from shifting between stages). The fuller, derivative-specific explanation
 // lives in the detail pane below the controls.
 const CAPTIONS: Record<VisualizerStage, string> = {
   image: 'The current image at this step, before the next seam is removed.',
+  greyscale: 'Colour collapsed to a single brightness (luminance) per pixel.',
   energy: 'Edge strength — how sharply each pixel differs from its neighbours.',
   cost: 'The cheapest top-to-bottom path cost accumulated into every pixel.',
   seam: 'The lowest-energy seam — the pixels about to be removed.',
 };
 const STAGE_TOOLTIPS: Record<VisualizerStage, string> = {
   image: 'The source image at this step',
-  energy: 'Per-pixel edge strength from the Sobel gradient',
+  greyscale: 'Luminance — the brightness the gradient is computed on',
+  energy: 'Per-pixel edge strength from the gradient',
   cost: 'Cumulative cheapest-path cost, accumulated top to bottom',
   seam: 'The lowest-energy seam about to be removed',
 };
@@ -49,9 +59,10 @@ export default function Visualizer({
   onSpeedCycle,
 }: Props) {
   const stageIdx = STAGES.indexOf(viz.currentStage);
+  const lastStageIdx = STAGES.length - 1;
 
   const handleNext = useCallback(() => {
-    if (stageIdx < 3) {
+    if (stageIdx < lastStageIdx) {
       onStageChange(STAGES[stageIdx + 1]);
     } else if (viz.currentSeam < viz.totalSeams - 1) {
       onSeamChange(viz.currentSeam + 1);
@@ -59,7 +70,15 @@ export default function Visualizer({
     } else {
       onPlayToggle(); // stop at end
     }
-  }, [stageIdx, viz.currentSeam, viz.totalSeams, onStageChange, onSeamChange, onPlayToggle]);
+  }, [
+    stageIdx,
+    lastStageIdx,
+    viz.currentSeam,
+    viz.totalSeams,
+    onStageChange,
+    onSeamChange,
+    onPlayToggle,
+  ]);
 
   const handlePrev = useCallback(() => {
     if (stageIdx > 0) {
@@ -85,6 +104,7 @@ export default function Visualizer({
     return (
       <section className="visualizer">
         <div className="visualizer-label">how seam carving works</div>
+        <p className="visualizer-intro">{INTRO}</p>
         <p className="visualizer-placeholder">{message}</p>
       </section>
     );
@@ -92,11 +112,13 @@ export default function Visualizer({
 
   const { frame, currentStage, currentSeam, totalSeams, isPlaying, speed } = viz;
   const activeImageData =
-    currentStage === 'energy'
-      ? frame.energyMap
-      : currentStage === 'cost'
-        ? frame.costHeatmap
-        : frame.imageData;
+    currentStage === 'greyscale'
+      ? frame.greyscaleMap
+      : currentStage === 'energy'
+        ? frame.energyMap
+        : currentStage === 'cost'
+          ? frame.costHeatmap
+          : frame.imageData;
   const showSeam = currentStage === 'seam';
   // Mark the cell each detail pane is sampled from so the grid below ties back
   // to a location on the canvas: the kernel midpoint on energy, and the
@@ -125,6 +147,7 @@ export default function Visualizer({
   return (
     <section className="visualizer">
       <div className="visualizer-label">how seam carving works</div>
+      <p className="visualizer-intro">{INTRO}</p>
       <div className="visualizer-stage-tabs">
         {STAGES.map((s) => (
           <button

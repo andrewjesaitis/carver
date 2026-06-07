@@ -439,6 +439,7 @@ function buildFrame(
   return {
     seam: seamIndex,
     imageData: copyImageData(img),
+    greyscaleMap: gs,
     energyMap: copyImageData(grad),
     costHeatmap: renderCostHeatmap(costMatrix, img.width, img.height),
     seamPath: seam,

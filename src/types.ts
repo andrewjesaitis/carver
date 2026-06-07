@@ -56,7 +56,7 @@ export interface EngineRuns {
   ts: EngineRunState;
 }
 
-export type VisualizerStage = 'image' | 'energy' | 'cost' | 'seam';
+export type VisualizerStage = 'image' | 'greyscale' | 'energy' | 'cost' | 'seam';
 
 export interface KernelSample {
   pixels: number[]; // 3×3 luminance values, row-major, centered on seam midpoint
@@ -81,6 +81,7 @@ export interface CostDetailSample {
 export interface VisualizerFrame {
   seam: number; // 0-indexed
   imageData: ImageData;
+  greyscaleMap: ImageData;
   energyMap: ImageData;
   costHeatmap: ImageData;
   seamPath: Seam;
@@ -114,6 +115,7 @@ export interface VisualizeFrameMsg {
   type: 'VISUALIZE_FRAME';
   seam: number;
   imageBuffer: ArrayBuffer;
+  greyscaleBuffer: ArrayBuffer;
   energyBuffer: ArrayBuffer;
   costBuffer: ArrayBuffer;
   width: number;
