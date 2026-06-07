@@ -58,6 +58,9 @@ export interface EngineRuns {
 
 export type VisualizerStage = 'image' | 'greyscale' | 'energy' | 'cost' | 'seam';
 
+// Playback speed multipliers offered by the visualizer controls.
+export type PlaybackSpeed = 0.5 | 1 | 2 | 4;
+
 export interface KernelSample {
   pixels: number[]; // 3×3 luminance values, row-major, centered on seam midpoint
   gx: number;
@@ -75,6 +78,7 @@ export interface CostDetailSample {
   gridWidth: number;
   gridHeight: number;
   minIndex: number; // index of the minimum cell within this grid
+  orientation: Orientation; // which way this seam's cost was accumulated
 }
 
 // Worker-internal snapshot — never posted directly; use VisualizeFrameMsg for transfer.
@@ -108,6 +112,11 @@ export interface VisualizeSeek {
 export interface VisualizeReady {
   type: 'VISUALIZE_READY';
   totalSeams: number;
+}
+
+export interface VisualizeError {
+  type: 'VISUALIZE_ERROR';
+  message: string;
 }
 
 // Transfers ArrayBuffers (not ImageData) to match the existing ResizeResponse pattern.

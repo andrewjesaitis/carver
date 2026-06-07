@@ -44,6 +44,26 @@ describe('seekViz', () => {
     expect(result.frame.imageData.width).toBe(10);
   });
 
+  it('backward seek reproduces the original frame byte-for-byte', () => {
+    const state = initViz(makePixels(10, 8), 10, 8, 'sobel', 6, 8);
+    const fwd0 = seekViz(state, 0);
+    const data0 = Array.from(fwd0.frame.imageData.data);
+    let result = seekViz(fwd0.state, 2);
+    result = seekViz(result.state, 0); // generator restarts from the original
+    expect(result.frame.seam).toBe(0);
+    expect(Array.from(result.frame.imageData.data)).toEqual(data0);
+  });
+
+  it('mid-range backward seek equals a fresh forward seek to the same index', () => {
+    const fresh = seekViz(initViz(makePixels(10, 8), 10, 8, 'sobel', 6, 8), 1);
+    const expected = Array.from(fresh.frame.imageData.data);
+
+    let result = seekViz(initViz(makePixels(10, 8), 10, 8, 'sobel', 6, 8), 3);
+    result = seekViz(result.state, 1);
+    expect(result.frame.seam).toBe(1);
+    expect(Array.from(result.frame.imageData.data)).toEqual(expected);
+  });
+
   it('throws when seeking past totalSeams', () => {
     const state = initViz(makePixels(10, 8), 10, 8, 'sobel', 7, 8);
     // 3 total seams (width: 10→7), seeking to 99 should throw

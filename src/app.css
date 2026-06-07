@@ -376,7 +376,8 @@ body {
   background: #d0d0d0;
 }
 
-/* Energy detail pane */
+/* Shared detail-pane box (energy, greyscale, cost) */
+.stage-detail,
 .energy-detail {
   background: #f8f8f6;
   border: 1px solid var(--border);

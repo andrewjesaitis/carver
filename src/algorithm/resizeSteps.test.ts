@@ -50,6 +50,48 @@ describe('resizeSteps', () => {
     expect(frame.costDetail.arrowDirs).toHaveLength(49);
   });
 
+  it('simple kernel sample is centre−left (Δx) and centre−upper (Δy)', () => {
+    const [frame] = resizeSteps(makeImage(10, 8), 'simple', 9, 8);
+    const { centerX, centerY, gx, gy, magnitude } = frame.kernelSample;
+    const gs = frame.greyscaleMap;
+    const lum = (x: number, y: number) => {
+      const cx = Math.max(0, Math.min(gs.width - 1, x));
+      const cy = Math.max(0, Math.min(gs.height - 1, y));
+      return gs.data[(cy * gs.width + cx) * 4];
+    };
+    const center = lum(centerX, centerY);
+    const expectedGx = center - lum(centerX - 1, centerY);
+    const expectedGy = center - lum(centerX, centerY - 1);
+    expect(gx).toBe(expectedGx);
+    expect(gy).toBe(expectedGy);
+    expect(magnitude).toBe(Math.sqrt(expectedGx * expectedGx + expectedGy * expectedGy) & 0xff);
+  });
+
+  it('sobel kernel sample is the weighted 3×3 response', () => {
+    const [frame] = resizeSteps(makeImage(10, 8), 'sobel', 9, 8);
+    const { gx, gy, magnitude, pixels } = frame.kernelSample;
+    const kx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+    const ky = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+    let expectedGx = 0;
+    let expectedGy = 0;
+    for (let i = 0; i < 9; i++) {
+      expectedGx += kx[i] * pixels[i];
+      expectedGy += ky[i] * pixels[i];
+    }
+    expect(gx).toBe(expectedGx);
+    expect(gy).toBe(expectedGy);
+    expect(magnitude).toBe(Math.sqrt(expectedGx * expectedGx + expectedGy * expectedGy) & 0xff);
+  });
+
+  it('simple and sobel yield different gradient responses on the same image', () => {
+    const [simpleFrame] = resizeSteps(makeImage(10, 8), 'simple', 9, 8);
+    const [sobelFrame] = resizeSteps(makeImage(10, 8), 'sobel', 9, 8);
+    // Same first frame (same source), so the kernels — not the pixels — differ.
+    const simpleResp = [simpleFrame.kernelSample.gx, simpleFrame.kernelSample.gy];
+    const sobelResp = [sobelFrame.kernelSample.gx, sobelFrame.kernelSample.gy];
+    expect(simpleResp).not.toEqual(sobelResp);
+  });
+
   it('produces the same final image as resize()', () => {
     const w = 10,
       h = 8,

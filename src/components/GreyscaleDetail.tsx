@@ -6,7 +6,7 @@ const GREYSCALE_DESC =
 
 export default function GreyscaleDetail() {
   return (
-    <div className="energy-detail">
+    <div className="stage-detail">
       <p className="detail-description">{GREYSCALE_DESC}</p>
       <div className="detail-diagram-label">luminance weights</div>
       <div className="cost-formula">Y = 0.21·R + 0.72·G + 0.07·B</div>

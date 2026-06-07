@@ -5,18 +5,20 @@ import type {
   EngineRunState,
   VisualizerStage,
   VisualizerFrame,
+  PlaybackSpeed,
 } from '../types';
 
 export interface VizState {
-  status: 'idle' | 'computing' | 'ready';
+  status: 'idle' | 'computing' | 'ready' | 'error';
   totalSeams: number;
   currentSeam: number;
   currentStage: VisualizerStage;
   frame: VisualizerFrame | null;
   isPlaying: boolean;
-  speed: 0.5 | 1 | 2 | 4;
+  speed: PlaybackSpeed;
   // The gradient operator the carve used — drives the energy stage explanation.
   derivative: Derivative;
+  errorMessage: string | null;
 }
 
 const initialVizState: VizState = {
@@ -28,6 +30,7 @@ const initialVizState: VizState = {
   isPlaying: false,
   speed: 1,
   derivative: 'sobel',
+  errorMessage: null,
 };
 
 export type SampleKey = 'balloon' | 'tower' | 'upload';
@@ -68,10 +71,11 @@ export type Action =
   | { type: 'WASM_STATUS'; available: boolean }
   | { type: 'VISUALIZE_READY'; totalSeams: number }
   | { type: 'VISUALIZE_FRAME'; frame: VisualizerFrame }
+  | { type: 'VISUALIZE_ERROR'; message: string }
   | { type: 'VISUALIZE_STAGE_CHANGED'; stage: VisualizerStage }
   | { type: 'VISUALIZE_SEAM_CHANGED'; seam: number }
   | { type: 'VISUALIZE_PLAY_TOGGLED' }
-  | { type: 'VISUALIZE_SPEED_CHANGED'; speed: 0.5 | 1 | 2 | 4 };
+  | { type: 'VISUALIZE_SPEED_CHANGED'; speed: PlaybackSpeed };
 
 const idleEngineRun: EngineRunState = {
   status: 'idle',
@@ -181,11 +185,19 @@ export function reducer(state: UiState, action: Action): UiState {
     case 'WASM_STATUS':
       return { ...state, wasm: action.available ? 'available' : 'unavailable' };
     case 'VISUALIZE_READY':
-      return { ...state, viz: { ...state.viz, status: 'ready', totalSeams: action.totalSeams } };
+      return {
+        ...state,
+        viz: { ...state.viz, status: 'ready', totalSeams: action.totalSeams, errorMessage: null },
+      };
     case 'VISUALIZE_FRAME':
       return {
         ...state,
         viz: { ...state.viz, frame: action.frame, currentSeam: action.frame.seam },
+      };
+    case 'VISUALIZE_ERROR':
+      return {
+        ...state,
+        viz: { ...state.viz, status: 'error', isPlaying: false, errorMessage: action.message },
       };
     case 'VISUALIZE_STAGE_CHANGED':
       return { ...state, viz: { ...state.viz, currentStage: action.stage } };

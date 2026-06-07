@@ -4,15 +4,15 @@ const SIMPLE_DESC =
   'The energy of an image is how rapidly brightness changes at each pixel. Working on the ' +
   'greyscale image, we measure how much the highlighted pixel differs from its left neighbour ' +
   '(Δx) and its upper neighbour (Δy) — the forward-difference kernels Gx and Gy below. We ' +
-  'combine them as E = √(Δx² + Δy²). Clamped to 0–255, this builds a greyscale map whose ' +
-  'brightest pixels trace the edges of objects in the scene.';
+  'combine them as E = √(Δx² + Δy²) and keep the low 8 bits as the pixel’s energy. The result ' +
+  'is a greyscale map whose brightest pixels trace the edges of objects in the scene.';
 
 const SOBEL_DESC =
   'The energy of an image is how rapidly brightness changes at each pixel. Working on the ' +
   'greyscale image, the Sobel operator convolves each pixel’s 3×3 neighbourhood with the ' +
   'kernels Gx and Gy below — nearer pixels weighted ×2, which suppresses noise. We combine the ' +
-  'two responses as E = √(Gx² + Gy²). Clamped to 0–255, the brightest pixels trace the edges of ' +
-  'objects in the scene.';
+  'two responses as E = √(Gx² + Gy²) and keep the low 8 bits as the pixel’s energy. The ' +
+  'brightest pixels trace the edges of objects in the scene.';
 
 // Convolution kernels, row-major, matching carver.ts. Simple is the
 // forward-difference stencil (centre minus left / centre minus upper).
@@ -172,7 +172,9 @@ export default function EnergyDetail({ sample, derivative }: Props) {
   return (
     <div className="energy-detail">
       <p className="detail-description">{isSimple ? SIMPLE_DESC : SOBEL_DESC}</p>
-      <div className="detail-diagram-label">{isSimple ? 'Difference kernels' : 'Sobel kernels'}</div>
+      <div className="detail-diagram-label">
+        {isSimple ? 'Difference kernels' : 'Sobel kernels'}
+      </div>
       <div className="kernel-matrices">
         <KernelMatrix label="Gx" weights={isSimple ? SIMPLE_GX : SOBEL_GX} />
         <KernelMatrix label="Gy" weights={isSimple ? SIMPLE_GY : SOBEL_GY} />

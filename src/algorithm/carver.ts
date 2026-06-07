@@ -36,7 +36,7 @@ export function greyscale(imgData: ImageData): ImageData {
 
 /**
  * Computes a gradient image using simple forward differences (dx, dy) on the greyscale image.
- * Magnitude is clamped to [0, 255]. Left column and top row are treated as zero-gradient
+ * Magnitude is reduced to its low 8 bits (`& 0xff`). Left column and top row are treated as zero-gradient
  * boundaries (matches original carver2.js behavior).
  */
 export function simpleGradient(imgData: ImageData): ImageData {
@@ -423,7 +423,14 @@ function extractCostDetail(costMatrix: CostMatrix, orientation: Orientation): Co
     }
   }
 
-  return { costs, arrowDirs, gridWidth: GRID, gridHeight: GRID, minIndex: HALF * GRID + HALF };
+  return {
+    costs,
+    arrowDirs,
+    gridWidth: GRID,
+    gridHeight: GRID,
+    minIndex: HALF * GRID + HALF,
+    orientation,
+  };
 }
 
 function buildFrame(

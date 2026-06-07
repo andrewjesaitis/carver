@@ -312,6 +312,7 @@ function makeVizFrame(seam = 0): VisualizerFrame {
       gridWidth: 7,
       gridHeight: 7,
       minIndex: 24,
+      orientation: 'vertical' as const,
     },
   };
 }
@@ -331,6 +332,7 @@ describe('viz reducer', () => {
         isPlaying: false,
         speed: 1,
         derivative: 'sobel',
+        errorMessage: null,
       },
     };
     const next = reducer(s, { type: 'CARVE_STARTED' });
@@ -352,6 +354,17 @@ describe('viz reducer', () => {
     const next = reducer(initialState, { type: 'VISUALIZE_FRAME', frame });
     expect(next.viz.frame).toBe(frame);
     expect(next.viz.currentSeam).toBe(3);
+  });
+
+  test('VISUALIZE_ERROR sets error status, message, and stops playback', () => {
+    const s: UiState = {
+      ...initialState,
+      viz: { ...initialState.viz, status: 'computing', isPlaying: true },
+    };
+    const next = reducer(s, { type: 'VISUALIZE_ERROR', message: 'boom' });
+    expect(next.viz.status).toBe('error');
+    expect(next.viz.errorMessage).toBe('boom');
+    expect(next.viz.isPlaying).toBe(false);
   });
 
   test('VISUALIZE_STAGE_CHANGED updates currentStage', () => {

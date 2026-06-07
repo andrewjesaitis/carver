@@ -9,8 +9,10 @@ import type {
   VisualizeSeek,
   VisualizeReady,
   VisualizeFrameMsg,
+  VisualizeError,
   VisualizerFrame,
   VisualizerStage,
+  PlaybackSpeed,
 } from '../types';
 import Masthead from './Masthead';
 import Controls from './Controls';
@@ -114,6 +116,15 @@ export default function App() {
   } = state;
 
   useEffect(() => {
+    // If the TS carve failed there's nothing to visualize — surface it instead
+    // of leaving the section stuck on "Computing…".
+    if (state.runs.ts.status === 'error') {
+      dispatch({
+        type: 'VISUALIZE_ERROR',
+        message: 'The carve failed, so the visualizer is unavailable.',
+      });
+      return;
+    }
     if (state.runs.ts.status !== 'done' || !currentImageData) return;
 
     const vizWorker = new Worker(new URL('../worker/carver.worker.ts', import.meta.url), {
@@ -121,10 +132,16 @@ export default function App() {
       name: 'carver-viz',
     });
 
-    vizWorker.onmessage = (e: MessageEvent<VisualizeReady | VisualizeFrameMsg>) => {
+    vizWorker.onmessage = (
+      e: MessageEvent<VisualizeReady | VisualizeFrameMsg | VisualizeError>,
+    ) => {
       const msg = e.data;
       if (msg.type === 'VISUALIZE_READY') {
         dispatch({ type: 'VISUALIZE_READY', totalSeams: msg.totalSeams });
+        return;
+      }
+      if (msg.type === 'VISUALIZE_ERROR') {
+        dispatch({ type: 'VISUALIZE_ERROR', message: msg.message });
         return;
       }
       if (msg.type === 'VISUALIZE_FRAME') {
@@ -145,6 +162,9 @@ export default function App() {
         dispatch({ type: 'VISUALIZE_FRAME', frame });
       }
     };
+
+    vizWorker.onerror = (e) =>
+      dispatch({ type: 'VISUALIZE_ERROR', message: e.message || 'Visualizer worker crashed' });
 
     vizWorkerRef.current = vizWorker;
 
@@ -237,7 +257,7 @@ export default function App() {
   }, []);
 
   const handleSpeedCycle = useCallback(() => {
-    const speeds: Array<0.5 | 1 | 2 | 4> = [0.5, 1, 2, 4];
+    const speeds: PlaybackSpeed[] = [0.5, 1, 2, 4];
     const next = speeds[(speeds.indexOf(state.viz.speed) + 1) % speeds.length];
     dispatch({ type: 'VISUALIZE_SPEED_CHANGED', speed: next });
   }, [state.viz.speed]);

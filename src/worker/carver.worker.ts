@@ -13,14 +13,15 @@ import type {
   VisualizeSeek,
   VisualizeReady,
   VisualizeFrameMsg,
+  VisualizeError,
 } from '../types';
 import init, { resize as wasmResize } from '../wasm/pkg/carver_wasm.js';
 import wasmUrl from '../wasm/pkg/carver_wasm_bg.wasm?url';
 import { dispatchResize, type WasmResize } from './dispatch';
-import { initViz, seekViz, computeTotalSeams, type VizState } from './viz-dispatch';
+import { initViz, seekViz, computeTotalSeams, type VizSeekState } from './viz-dispatch';
 
 let wasm: WasmResize | null = null;
-let vizState: VizState | null = null;
+let vizState: VizSeekState | null = null;
 
 init(wasmUrl)
   .then(() => {
@@ -62,16 +63,29 @@ self.onmessage = (event: MessageEvent<ResizeRequest | VisualizeInit | VisualizeS
   }
 
   if (msg.type === 'VISUALIZE_INIT') {
-    vizState = initViz(
-      msg.buffer,
-      msg.width,
-      msg.height,
-      msg.derivative,
-      msg.targetWidth,
-      msg.targetHeight,
-    );
-    const totalSeams = computeTotalSeams(msg.width, msg.height, msg.targetWidth, msg.targetHeight);
-    self.postMessage({ type: 'VISUALIZE_READY', totalSeams } satisfies VisualizeReady);
+    try {
+      vizState = initViz(
+        msg.buffer,
+        msg.width,
+        msg.height,
+        msg.derivative,
+        msg.targetWidth,
+        msg.targetHeight,
+      );
+      const totalSeams = computeTotalSeams(
+        msg.width,
+        msg.height,
+        msg.targetWidth,
+        msg.targetHeight,
+      );
+      self.postMessage({ type: 'VISUALIZE_READY', totalSeams } satisfies VisualizeReady);
+    } catch (err) {
+      console.error('[carver-worker] VISUALIZE_INIT failed:', err);
+      self.postMessage({
+        type: 'VISUALIZE_ERROR',
+        message: err instanceof Error ? err.message : String(err),
+      } satisfies VisualizeError);
+    }
     return;
   }
 
@@ -101,6 +115,10 @@ self.onmessage = (event: MessageEvent<ResizeRequest | VisualizeInit | VisualizeS
       ]);
     } catch (err) {
       console.error('[carver-worker] VISUALIZE_SEEK failed:', err);
+      self.postMessage({
+        type: 'VISUALIZE_ERROR',
+        message: err instanceof Error ? err.message : String(err),
+      } satisfies VisualizeError);
     }
   }
 };

@@ -28,14 +28,14 @@ const CAPTIONS: Record<VisualizerStage, string> = {
   image: 'The current image at this step, before the next seam is removed.',
   greyscale: 'Colour collapsed to a single brightness (luminance) per pixel.',
   energy: 'Edge strength — how sharply each pixel differs from its neighbours.',
-  cost: 'The cheapest top-to-bottom path cost accumulated into every pixel.',
+  cost: 'The cheapest cumulative path cost accumulated into every pixel.',
   seam: 'The lowest-energy seam — the pixels about to be removed.',
 };
 const STAGE_TOOLTIPS: Record<VisualizerStage, string> = {
   image: 'The source image at this step',
   greyscale: 'Luminance — the brightness the gradient is computed on',
   energy: 'Per-pixel edge strength from the gradient',
-  cost: 'Cumulative cheapest-path cost, accumulated top to bottom',
+  cost: 'Cumulative cheapest-path cost from the opposite edge',
   seam: 'The lowest-energy seam about to be removed',
 };
 
@@ -67,14 +67,17 @@ export default function Visualizer({
     } else if (viz.currentSeam < viz.totalSeams - 1) {
       onSeamChange(viz.currentSeam + 1);
       onStageChange('image');
-    } else {
-      onPlayToggle(); // stop at end
+    } else if (viz.isPlaying) {
+      // At the very end: stop playback. Guard on isPlaying so a manual step at
+      // the end (when paused) doesn't accidentally start it.
+      onPlayToggle();
     }
   }, [
     stageIdx,
     lastStageIdx,
     viz.currentSeam,
     viz.totalSeams,
+    viz.isPlaying,
     onStageChange,
     onSeamChange,
     onPlayToggle,
@@ -97,15 +100,19 @@ export default function Visualizer({
   }, [viz.isPlaying, viz.speed, handleNext]);
 
   if (viz.status !== 'ready' || !viz.frame) {
-    const message =
-      viz.status === 'idle'
+    const isError = viz.status === 'error';
+    const message = isError
+      ? (viz.errorMessage ?? 'The visualizer ran into an error.')
+      : viz.status === 'idle'
         ? 'Run a carve above to activate the visualizer.'
         : 'Computing visualizer…';
     return (
       <section className="visualizer">
         <div className="visualizer-label">how seam carving works</div>
         <p className="visualizer-intro">{INTRO}</p>
-        <p className="visualizer-placeholder">{message}</p>
+        <p className="visualizer-placeholder" role={isError ? 'alert' : undefined}>
+          {message}
+        </p>
       </section>
     );
   }

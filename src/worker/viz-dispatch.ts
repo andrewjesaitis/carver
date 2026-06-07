@@ -1,7 +1,7 @@
 import type { Derivative, Seam, VisualizerFrame } from '../types';
 import { resizeSteps } from '../algorithm/carver';
 
-export interface VizState {
+export interface VizSeekState {
   gen: Generator<VisualizerFrame>;
   seams: Seam[];
   originalBuffer: ArrayBuffer;
@@ -29,7 +29,7 @@ export function initViz(
   derivative: Derivative,
   targetWidth: number,
   targetHeight: number,
-): VizState {
+): VizSeekState {
   const imageData = new ImageData(new Uint8ClampedArray(buffer), width, height);
   return {
     gen: resizeSteps(imageData, derivative, targetWidth, targetHeight),
@@ -44,7 +44,10 @@ export function initViz(
   };
 }
 
-export function seekViz(state: VizState, n: number): { state: VizState; frame: VisualizerFrame } {
+export function seekViz(
+  state: VizSeekState,
+  n: number,
+): { state: VizSeekState; frame: VisualizerFrame } {
   if (n > state.currentSeam) {
     return advanceTo(state, n);
   }
@@ -60,7 +63,10 @@ export function seekViz(state: VizState, n: number): { state: VizState; frame: V
   return advanceTo(fresh, n);
 }
 
-function advanceTo(state: VizState, n: number): { state: VizState; frame: VisualizerFrame } {
+function advanceTo(
+  state: VizSeekState,
+  n: number,
+): { state: VizSeekState; frame: VisualizerFrame } {
   const seams = [...state.seams];
   let currentSeam = state.currentSeam;
   let frame: VisualizerFrame | undefined;

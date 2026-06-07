@@ -1,4 +1,4 @@
-import type { VisualizerStage } from '../types';
+import type { VisualizerStage, PlaybackSpeed } from '../types';
 
 const STAGE_NUM: Record<VisualizerStage, number> = {
   image: 1,
@@ -14,7 +14,7 @@ interface Props {
   currentStage: VisualizerStage;
   totalSeams: number;
   isPlaying: boolean;
-  speed: 0.5 | 1 | 2 | 4;
+  speed: PlaybackSpeed;
   onPrev: () => void;
   onNext: () => void;
   onFirst: () => void;
