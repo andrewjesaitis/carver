@@ -21,10 +21,8 @@ const SOBEL_GY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
 const SIMPLE_GX = [0, 0, 0, -1, 1, 0, 0, 0, 0];
 const SIMPLE_GY = [0, -1, 0, 0, 1, 0, 0, 0, 0];
 
-// Pixel positions in the row-major 3×3 sample.
+// Centre of the row-major 3×3 sample (highlighted cell).
 const CENTER = 4;
-const LEFT = 3;
-const UP = 1;
 
 interface Props {
   sample: KernelSample;
