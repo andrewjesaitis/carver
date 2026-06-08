@@ -36,7 +36,7 @@ export function greyscale(imgData: ImageData): ImageData {
 
 /**
  * Computes a gradient image using simple forward differences (dx, dy) on the greyscale image.
- * Magnitude is reduced to its low 8 bits (`& 0xff`). Left column and top row are treated as zero-gradient
+ * Magnitude is clamped to 0–255 (`Math.min(255, …)`). Left column and top row are treated as zero-gradient
  * boundaries (matches original carver2.js behavior).
  */
 export function simpleGradient(imgData: ImageData): ImageData {
@@ -60,7 +60,7 @@ export function simpleGradient(imgData: ImageData): ImageData {
       const uidx = x > 0 && y > 0 ? at(x, y - 1, w, c) : idx;
       const dx = gsImgData.data[idx] - gsImgData.data[lidx];
       const dy = gsImgData.data[idx] - gsImgData.data[uidx];
-      const mag = Math.sqrt(dx * dx + dy * dy) & 0xff;
+      const mag = Math.min(255, Math.sqrt(dx * dx + dy * dy) | 0);
       view32[idx32] = (alpha << 24) | (mag << 16) | (mag << 8) | mag;
     }
   }
@@ -115,7 +115,7 @@ export function sobelGradient(imgData: ImageData): ImageData {
         kernelY[2][0] * gsImgData.data[at(x - 1, y + 1, w, c)] +
         kernelY[2][1] * gsImgData.data[at(x, y + 1, w, c)] +
         kernelY[2][2] * gsImgData.data[at(x + 1, y + 1, w, c)];
-      const mag = Math.sqrt(dx * dx + dy * dy) & 0xff;
+      const mag = Math.min(255, Math.sqrt(dx * dx + dy * dy) | 0);
       view32[at(x, y, w)] = (alpha << 24) | (mag << 16) | (mag << 8) | mag;
     }
   }
@@ -367,7 +367,7 @@ function extractKernelSample(gs: ImageData, seam: Seam, derivative: Derivative):
       gy += ky[i] * pixels[i];
     }
   }
-  const magnitude = Math.sqrt(gx * gx + gy * gy) & 0xff;
+  const magnitude = Math.min(255, Math.sqrt(gx * gx + gy * gy) | 0);
   return { pixels, gx, gy, magnitude, centerX: x, centerY: y };
 }
 

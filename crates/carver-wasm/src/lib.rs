@@ -39,8 +39,9 @@ fn simple_gradient(grey: &[u8], width: u32, height: u32) -> Vec<u8> {
             };
             let dx = grey[idx] as f64 - grey[lidx] as f64;
             let dy = grey[idx] as f64 - grey[uidx] as f64;
-            // & 0xff clamps to byte range, matching TS `Math.sqrt(...) & 0xff`
-            grad[idx] = ((dx * dx + dy * dy).sqrt() as u32 & 0xff) as u8;
+            // Clamp to byte range, matching TS `Math.min(255, Math.sqrt(...) | 0)`.
+            // `f64 as u32` saturates (NaN → 0), then `.min(255)` caps strong edges at 255.
+            grad[idx] = ((dx * dx + dy * dy).sqrt() as u32).min(255) as u8;
         }
     }
     grad
@@ -48,7 +49,7 @@ fn simple_gradient(grey: &[u8], width: u32, height: u32) -> Vec<u8> {
 
 /// Computes gradient magnitude using the Sobel operator, matching the TS sobelGradient.
 /// Negative flat indices return NaN (like JS Uint8ClampedArray undefined), which propagates
-/// through the convolution sum and produces 0 via `NaN & 0xff = 0`. Positive out-of-bounds
+/// through the convolution sum and produces 0 via the saturating `NaN as u32 = 0`. Positive out-of-bounds
 /// indices also return NaN. Positive in-bounds indices return the actual grey value —
 /// including wrap-around reads, which match TS Uint8ClampedArray behavior exactly.
 fn sobel_gradient(grey: &[u8], width: u32, height: u32) -> Vec<u8> {
@@ -94,8 +95,9 @@ fn sobel_gradient(grey: &[u8], width: u32, height: u32) -> Vec<u8> {
                 + kernel_y[2][0] * get(xi - 1, yi + 1)
                 + kernel_y[2][1] * get(xi, yi + 1)
                 + kernel_y[2][2] * get(xi + 1, yi + 1);
-            // NaN.sqrt() = NaN, NaN as u32 = 0, so NaN & 0xff = 0 — matches TS `NaN & 0xff = 0`
-            let mag = ((dx * dx + dy * dy).sqrt() as u32) & 0xff;
+            // NaN.sqrt() = NaN, NaN as u32 = 0 (saturating), so borders stay 0 — matches TS
+            // `NaN | 0 = 0`. `.min(255)` clamps strong edges, matching TS `Math.min(255, …)`.
+            let mag = ((dx * dx + dy * dy).sqrt() as u32).min(255);
             grad[y * w + x] = mag as u8;
         }
     }
@@ -383,18 +385,41 @@ mod tests {
         let result = sobel_gradient(&grey, 4, 4);
         let expected: Vec<u8> = vec![
             0, 0, 0, 0,
-            0, 190, 32, 252,
-            35, 137, 186, 0,
+            0, 255, 255, 255,
+            255, 255, 255, 0,
             0, 0, 0, 0,
         ];
         assert_eq!(result, expected);
     }
 
-    // Sobel gradient as single-channel — used as input for cost matrix and seam tests
+    #[test]
+    fn test_simple_gradient_clamps() {
+        // 2×2 greyscale: (1,1)=255 with black left/top → dx=dy=255, raw magnitude ≈360.
+        // Wrapping (& 0xff) yields 104; clamping yields 255.
+        let grey: [u8; 4] = [0, 0, 0, 255];
+        let result = simple_gradient(&grey, 2, 2);
+        assert_eq!(result[3], 255); // pixel (1,1)
+    }
+
+    #[test]
+    fn test_sobel_gradient_clamps() {
+        // 3×3 hard vertical edge (cols black, black, white): Sobel dx at centre = 1020.
+        // Wrapping (& 0xff) yields 252; clamping yields 255.
+        let grey: [u8; 9] = [
+            0, 0, 255,
+            0, 0, 255,
+            0, 0, 255,
+        ];
+        let result = sobel_gradient(&grey, 3, 3);
+        assert_eq!(result[4], 255); // pixel (1,1) → 1*3+1
+    }
+
+    // Sobel gradient as single-channel — used as input for cost matrix and seam tests.
+    // Interior edge cells clamp to 255 (their raw magnitudes exceed 255).
     const SOBEL_GRAD: [u8; 16] = [
         0, 0, 0, 0,
-        0, 190, 32, 252,
-        35, 137, 186, 0,
+        0, 255, 255, 255,
+        255, 255, 255, 0,
         0, 0, 0, 0,
     ];
 
@@ -404,28 +429,28 @@ mod tests {
         // Spot-check key cells (column-major: index = x * h + y)
         assert_eq!(cm[0 * 4 + 0], CostCell { cost: 0, min_neighbor: None }); // (0,0)
         assert_eq!(cm[0 * 4 + 1], CostCell { cost: 0, min_neighbor: Some((1, 0)) }); // (0,1)
-        assert_eq!(cm[0 * 4 + 2], CostCell { cost: 35, min_neighbor: Some((0, 1)) }); // (0,2)
-        assert_eq!(cm[1 * 4 + 1], CostCell { cost: 190, min_neighbor: Some((2, 0)) }); // (1,1)
-        assert_eq!(cm[2 * 4 + 1], CostCell { cost: 32, min_neighbor: Some((3, 0)) }); // (2,1)
-        assert_eq!(cm[3 * 4 + 2], CostCell { cost: 32, min_neighbor: Some((2, 1)) }); // (3,2)
-        assert_eq!(cm[3 * 4 + 3], CostCell { cost: 32, min_neighbor: Some((3, 2)) }); // (3,3)
+        assert_eq!(cm[0 * 4 + 2], CostCell { cost: 255, min_neighbor: Some((0, 1)) }); // (0,2)
+        assert_eq!(cm[1 * 4 + 1], CostCell { cost: 255, min_neighbor: Some((2, 0)) }); // (1,1)
+        assert_eq!(cm[2 * 4 + 1], CostCell { cost: 255, min_neighbor: Some((3, 0)) }); // (2,1)
+        assert_eq!(cm[3 * 4 + 2], CostCell { cost: 255, min_neighbor: Some((3, 1)) }); // (3,2)
+        assert_eq!(cm[3 * 4 + 3], CostCell { cost: 255, min_neighbor: Some((3, 2)) }); // (3,3)
     }
 
     #[test]
     fn test_compute_cost_matrix_horizontal() {
         let cm = compute_cost_matrix(&SOBEL_GRAD, 4, 4, "horizontal");
         assert_eq!(cm[0 * 4 + 0], CostCell { cost: 0, min_neighbor: None }); // (0,0)
-        assert_eq!(cm[0 * 4 + 2], CostCell { cost: 35, min_neighbor: None }); // (0,2)
+        assert_eq!(cm[0 * 4 + 2], CostCell { cost: 255, min_neighbor: None }); // (0,2)
         assert_eq!(cm[1 * 4 + 0], CostCell { cost: 0, min_neighbor: Some((0, 1)) }); // (1,0)
-        assert_eq!(cm[1 * 4 + 2], CostCell { cost: 137, min_neighbor: Some((0, 3)) }); // (1,2)
-        assert_eq!(cm[3 * 4 + 1], CostCell { cost: 252, min_neighbor: Some((2, 0)) }); // (3,1)
+        assert_eq!(cm[1 * 4 + 2], CostCell { cost: 255, min_neighbor: Some((0, 3)) }); // (1,2)
+        assert_eq!(cm[3 * 4 + 1], CostCell { cost: 255, min_neighbor: Some((2, 0)) }); // (3,1)
         assert_eq!(cm[3 * 4 + 3], CostCell { cost: 0, min_neighbor: Some((2, 3)) }); // (3,3)
     }
 
     #[test]
     fn test_find_seam_vertical() {
         let result = find_seam(&SOBEL_GRAD, 4, 4, "vertical");
-        let expected: Vec<(u32, u32)> = vec![(3, 3), (3, 2), (2, 1), (3, 0)];
+        let expected: Vec<(u32, u32)> = vec![(3, 3), (3, 2), (3, 1), (3, 0)];
         assert_eq!(result, expected);
     }
 

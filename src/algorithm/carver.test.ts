@@ -55,9 +55,9 @@ describe('sobelGradient', () => {
     const result = sobelGradient(testImgData);
     const expected = new ImageData(
       new Uint8ClampedArray([
-        0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 190, 190, 190, 255,
-        32, 32, 32, 255, 252, 252, 252, 255, 35, 35, 35, 255, 137, 137, 137, 255, 186, 186, 186,
-        255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255,
+        0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255,
       ]),
       4,
       4,
@@ -66,12 +66,42 @@ describe('sobelGradient', () => {
   });
 });
 
-// Sobel gradient of the 4×4 fixture — used as input for cost matrix tests
+describe('gradient magnitude clamping', () => {
+  test('simpleGradient clamps magnitudes above 255 instead of wrapping', () => {
+    // (1,1) is white with black left/top neighbours: dx=dy=255, raw magnitude ≈360.
+    // Wrapping (& 0xff) yields 104; clamping yields 255.
+    const img = new ImageData(
+      new Uint8ClampedArray([0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255]),
+      2,
+      2,
+    );
+    const result = simpleGradient(img);
+    expect(result.data[12]).toBe(255); // pixel (1,1) → (1*2+1)*4
+  });
+
+  test('sobelGradient clamps magnitudes above 255 instead of wrapping', () => {
+    // 3×3 hard vertical edge (left/middle black, right white): Sobel dx at centre = 1020.
+    // Wrapping (& 0xff) yields 252; clamping yields 255.
+    const img = new ImageData(
+      new Uint8ClampedArray([
+        0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255,
+        255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255,
+      ]),
+      3,
+      3,
+    );
+    const result = sobelGradient(img);
+    expect(result.data[16]).toBe(255); // pixel (1,1) → (1*3+1)*4
+  });
+});
+
+// Sobel gradient of the 4×4 fixture — used as input for cost matrix tests.
+// Interior edge cells clamp to 255 (their raw magnitudes exceed 255).
 const sobelGradImg = new ImageData(
   new Uint8ClampedArray([
-    0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 190, 190, 190, 255, 32,
-    32, 32, 255, 252, 252, 252, 255, 35, 35, 35, 255, 137, 137, 137, 255, 186, 186, 186, 255, 0, 0,
-    0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255,
+    0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255,
   ]),
   4,
   4,
@@ -84,26 +114,26 @@ describe('computeCostMatrix', () => {
       [
         { current: { cost: 0, x: 0, y: 0 }, minNeighbor: null },
         { current: { cost: 0, x: 0, y: 1 }, minNeighbor: { cost: 0, x: 1, y: 0 } },
-        { current: { cost: 35, x: 0, y: 2 }, minNeighbor: { cost: 0, x: 0, y: 1 } },
-        { current: { cost: 35, x: 0, y: 3 }, minNeighbor: { cost: 35, x: 0, y: 2 } },
+        { current: { cost: 255, x: 0, y: 2 }, minNeighbor: { cost: 0, x: 0, y: 1 } },
+        { current: { cost: 255, x: 0, y: 3 }, minNeighbor: { cost: 255, x: 1, y: 2 } },
       ],
       [
         { current: { cost: 0, x: 1, y: 0 }, minNeighbor: null },
-        { current: { cost: 190, x: 1, y: 1 }, minNeighbor: { cost: 0, x: 2, y: 0 } },
-        { current: { cost: 137, x: 1, y: 2 }, minNeighbor: { cost: 0, x: 0, y: 1 } },
-        { current: { cost: 35, x: 1, y: 3 }, minNeighbor: { cost: 35, x: 0, y: 2 } },
+        { current: { cost: 255, x: 1, y: 1 }, minNeighbor: { cost: 0, x: 2, y: 0 } },
+        { current: { cost: 255, x: 1, y: 2 }, minNeighbor: { cost: 0, x: 0, y: 1 } },
+        { current: { cost: 255, x: 1, y: 3 }, minNeighbor: { cost: 255, x: 1, y: 2 } },
       ],
       [
         { current: { cost: 0, x: 2, y: 0 }, minNeighbor: null },
-        { current: { cost: 32, x: 2, y: 1 }, minNeighbor: { cost: 0, x: 3, y: 0 } },
-        { current: { cost: 218, x: 2, y: 2 }, minNeighbor: { cost: 32, x: 2, y: 1 } },
-        { current: { cost: 32, x: 2, y: 3 }, minNeighbor: { cost: 32, x: 3, y: 2 } },
+        { current: { cost: 255, x: 2, y: 1 }, minNeighbor: { cost: 0, x: 3, y: 0 } },
+        { current: { cost: 510, x: 2, y: 2 }, minNeighbor: { cost: 255, x: 3, y: 1 } },
+        { current: { cost: 255, x: 2, y: 3 }, minNeighbor: { cost: 255, x: 3, y: 2 } },
       ],
       [
         { current: { cost: 0, x: 3, y: 0 }, minNeighbor: null },
-        { current: { cost: 252, x: 3, y: 1 }, minNeighbor: { cost: 0, x: 3, y: 0 } },
-        { current: { cost: 32, x: 3, y: 2 }, minNeighbor: { cost: 32, x: 2, y: 1 } },
-        { current: { cost: 32, x: 3, y: 3 }, minNeighbor: { cost: 32, x: 3, y: 2 } },
+        { current: { cost: 255, x: 3, y: 1 }, minNeighbor: { cost: 0, x: 3, y: 0 } },
+        { current: { cost: 255, x: 3, y: 2 }, minNeighbor: { cost: 255, x: 3, y: 1 } },
+        { current: { cost: 255, x: 3, y: 3 }, minNeighbor: { cost: 255, x: 3, y: 2 } },
       ],
     ];
     expect(result).toEqual(expected);
@@ -115,24 +145,24 @@ describe('computeCostMatrix', () => {
       [
         { current: { cost: 0, x: 0, y: 0 }, minNeighbor: null },
         { current: { cost: 0, x: 0, y: 1 }, minNeighbor: null },
-        { current: { cost: 35, x: 0, y: 2 }, minNeighbor: null },
+        { current: { cost: 255, x: 0, y: 2 }, minNeighbor: null },
         { current: { cost: 0, x: 0, y: 3 }, minNeighbor: null },
       ],
       [
         { current: { cost: 0, x: 1, y: 0 }, minNeighbor: { cost: 0, x: 0, y: 1 } },
-        { current: { cost: 190, x: 1, y: 1 }, minNeighbor: { cost: 0, x: 0, y: 1 } },
-        { current: { cost: 137, x: 1, y: 2 }, minNeighbor: { cost: 0, x: 0, y: 3 } },
+        { current: { cost: 255, x: 1, y: 1 }, minNeighbor: { cost: 0, x: 0, y: 1 } },
+        { current: { cost: 255, x: 1, y: 2 }, minNeighbor: { cost: 0, x: 0, y: 3 } },
         { current: { cost: 0, x: 1, y: 3 }, minNeighbor: { cost: 0, x: 0, y: 3 } },
       ],
       [
         { current: { cost: 0, x: 2, y: 0 }, minNeighbor: { cost: 0, x: 1, y: 0 } },
-        { current: { cost: 32, x: 2, y: 1 }, minNeighbor: { cost: 0, x: 1, y: 0 } },
-        { current: { cost: 186, x: 2, y: 2 }, minNeighbor: { cost: 0, x: 1, y: 3 } },
+        { current: { cost: 255, x: 2, y: 1 }, minNeighbor: { cost: 0, x: 1, y: 0 } },
+        { current: { cost: 255, x: 2, y: 2 }, minNeighbor: { cost: 0, x: 1, y: 3 } },
         { current: { cost: 0, x: 2, y: 3 }, minNeighbor: { cost: 0, x: 1, y: 3 } },
       ],
       [
         { current: { cost: 0, x: 3, y: 0 }, minNeighbor: { cost: 0, x: 2, y: 0 } },
-        { current: { cost: 252, x: 3, y: 1 }, minNeighbor: { cost: 0, x: 2, y: 0 } },
+        { current: { cost: 255, x: 3, y: 1 }, minNeighbor: { cost: 0, x: 2, y: 0 } },
         { current: { cost: 0, x: 3, y: 2 }, minNeighbor: { cost: 0, x: 2, y: 3 } },
         { current: { cost: 0, x: 3, y: 3 }, minNeighbor: { cost: 0, x: 2, y: 3 } },
       ],
@@ -147,7 +177,7 @@ describe('findSeam', () => {
     expect(result).toEqual([
       { x: 3, y: 3 },
       { x: 3, y: 2 },
-      { x: 2, y: 1 },
+      { x: 3, y: 1 },
       { x: 3, y: 0 },
     ]);
   });

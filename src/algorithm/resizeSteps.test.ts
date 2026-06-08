@@ -64,7 +64,9 @@ describe('resizeSteps', () => {
     const expectedGy = center - lum(centerX, centerY - 1);
     expect(gx).toBe(expectedGx);
     expect(gy).toBe(expectedGy);
-    expect(magnitude).toBe(Math.sqrt(expectedGx * expectedGx + expectedGy * expectedGy) & 0xff);
+    expect(magnitude).toBe(
+      Math.min(255, Math.sqrt(expectedGx * expectedGx + expectedGy * expectedGy) | 0),
+    );
   });
 
   it('sobel kernel sample is the weighted 3×3 response', () => {
@@ -80,7 +82,9 @@ describe('resizeSteps', () => {
     }
     expect(gx).toBe(expectedGx);
     expect(gy).toBe(expectedGy);
-    expect(magnitude).toBe(Math.sqrt(expectedGx * expectedGx + expectedGy * expectedGy) & 0xff);
+    expect(magnitude).toBe(
+      Math.min(255, Math.sqrt(expectedGx * expectedGx + expectedGy * expectedGy) | 0),
+    );
   });
 
   it('simple and sobel yield different gradient responses on the same image', () => {
