@@ -218,35 +218,388 @@ body {
   margin-top: 4px;
 }
 
-/* Explainer */
-.explainer {
+/* ── Visualizer ─────────────────────────────────────────── */
+
+.visualizer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--border);
-  padding-top: 24px;
 }
-.explainer-label {
-  font-family: var(--sans);
-  font-size: 0.68rem;
+
+.visualizer-label {
+  font-family: var(--serif);
+  font-size: 0.75rem;
+  text-transform: lowercase;
+  letter-spacing: 0.08em;
   color: var(--fg-muted);
-  letter-spacing: 0.1em;
-  text-transform: lowercase;
-  margin-bottom: 16px;
+  margin-bottom: 0.75rem;
 }
-.explainer-step {
-  margin-bottom: 18px;
-}
-.explainer-step:last-child {
-  margin-bottom: 0;
-}
-.explainer-step-title {
-  font-family: var(--serif);
-  font-size: 1.1rem;
-  font-weight: 700;
-  text-transform: lowercase;
-  margin-bottom: 5px;
-}
-.explainer-step-body {
-  font-family: var(--serif);
-  font-size: 0.98rem;
+
+/* High-level overview shown above the step-through, in every state. */
+.visualizer-intro {
+  font-size: 0.9375rem;
   line-height: 1.6;
-  color: var(--fg-body);
+  color: var(--fg);
+  max-width: 65ch;
+  margin: 0 0 1.5rem;
+}
+
+.visualizer-placeholder {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* Stage tabs */
+.visualizer-stage-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.stage-tab {
+  flex: 1;
+  padding: 0.35rem 0;
+  background: #e5e5e4;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.1s;
+}
+
+.stage-tab--active {
+  background: #151515;
+  color: #f5f5f4;
+}
+
+/* Canvas + inspector */
+.visualizer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.visualizer-canvas-wrap {
+  width: 100%;
+}
+
+.visualizer-canvas {
+  display: block;
+  border-radius: 3px;
+}
+
+.visualizer-caption {
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+  font-style: italic;
+  text-align: center;
+  /* Reserve two lines so varying caption length doesn't shift the controls. */
+  min-height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.4rem 0 0.75rem;
+}
+
+/* Detail pane sits below the controls so toggling it between stages never
+   moves the controls. */
+.visualizer-inspector {
+  margin-top: 0.75rem;
+}
+
+/* Playback controls */
+.playback-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.4rem 0.75rem;
+  font-family: var(--sans);
+}
+
+.playback-nav {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.playback-nav button {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #767676;
+  border-radius: 3px;
+}
+
+.playback-nav button:hover {
+  background: #f5f5f4;
+  color: #151515;
+}
+
+.playback-nav button:nth-child(3) {
+  background: #151515;
+  color: #f5f5f4;
+  padding: 0.25rem 0.6rem;
+}
+
+.playback-nav button:nth-child(3):hover {
+  background: #333;
+}
+
+.playback-counter {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.playback-speed {
+  background: #e3e3e3;
+  border: none;
+  border-radius: 3px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  color: #151515;
+  cursor: pointer;
+  font-family: var(--sans);
+}
+
+.playback-speed:hover {
+  background: #d0d0d0;
+}
+
+/* Shared detail-pane box (energy, greyscale, cost) */
+.stage-detail,
+.energy-detail {
+  background: #f8f8f6;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Fuller explanation shown in the detail pane (below the controls). */
+.detail-description {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--fg);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.detail-diagram-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+}
+
+/* Gradient kernel weight matrices */
+.kernel-matrices {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.kernel-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.kernel-matrix-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #151515;
+  font-variant-numeric: tabular-nums;
+}
+
+.kernel-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1.6rem);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.kernel-weight {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  background: #fff;
+  color: #767676;
+  font-variant-numeric: tabular-nums;
+}
+
+.kernel-weight--pos {
+  color: #1a6c2e;
+}
+
+.kernel-weight--neg {
+  color: #b22222;
+}
+
+.kernel-weight--center {
+  outline: 2px solid #e6a800;
+  outline-offset: -2px;
+}
+
+.energy-diagram {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.energy-grid-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.energy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 2.5rem);
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+/* Arrow overlay sits exactly over the grid; viewBox units = rem so the
+   coordinates computed in EnergyDetail line up at any root font size. */
+.energy-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.energy-arrow-label {
+  fill: #ffcc00;
+  font-weight: 700;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.75);
+  stroke-width: 0.06;
+}
+
+.kernel-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  border-radius: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kernel-cell--center {
+  outline: 2px solid #e6a800;
+  outline-offset: -1px;
+}
+
+.energy-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.kernel-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.kernel-stat-value {
+  color: #151515;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.kernel-stat-desc {
+  color: var(--fg-muted);
+}
+
+.energy-result {
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  color: #151515;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cost detail pane */
+.cost-detail {
+  background: #f8f8f6;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cost-detail-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+}
+
+.cost-formula {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: #151515;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.5rem 0.6rem;
+  overflow-x: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-grid {
+  display: grid;
+  gap: 1px;
+  /* Keep the grid compact now that the pane spans the full column width. */
+  max-width: 18rem;
+}
+
+.cost-cell {
+  background: #151515;
+  border-radius: 1px;
+  padding: 2px 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cost-cell--min {
+  outline: 2px solid #ef4444;
+  outline-offset: -1px;
+}
+
+.cost-arrow {
+  font-size: 0.55rem;
+  color: #f5f5f4;
+  line-height: 1;
+}
+
+.cost-value {
+  font-size: 0.5rem;
+  color: #aaa;
+  font-variant-numeric: tabular-nums;
 }

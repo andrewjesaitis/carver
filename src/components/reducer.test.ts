@@ -280,3 +280,112 @@ describe('simple field setters', () => {
     expect(next.activeTab).toBe('carved');
   });
 });
+
+import type { VisualizerFrame } from '../types';
+
+function makeVizFrame(seam = 0): VisualizerFrame {
+  const data = new Uint8ClampedArray(4 * 4 * 4).fill(128);
+  const img = new ImageData(data, 4, 4);
+  return {
+    seam,
+    imageData: img,
+    greyscaleMap: img,
+    energyMap: img,
+    costHeatmap: img,
+    seamPath: [
+      { x: 2, y: 0 },
+      { x: 2, y: 1 },
+      { x: 2, y: 2 },
+      { x: 2, y: 3 },
+    ],
+    kernelSample: {
+      pixels: new Array(9).fill(128),
+      gx: 0,
+      gy: 0,
+      magnitude: 0,
+      centerX: 2,
+      centerY: 2,
+    },
+    costDetail: {
+      costs: new Array(49).fill(100),
+      arrowDirs: new Array(49).fill('up' as const),
+      gridWidth: 7,
+      gridHeight: 7,
+      minIndex: 24,
+      orientation: 'vertical' as const,
+    },
+  };
+}
+
+describe('viz reducer', () => {
+  test('CARVE_STARTED resets viz to computing', () => {
+    const s: UiState = {
+      ...initialState,
+      wasm: 'available',
+      derivative: 'simple',
+      viz: {
+        status: 'ready',
+        totalSeams: 10,
+        currentSeam: 5,
+        currentStage: 'cost',
+        frame: makeVizFrame(),
+        isPlaying: false,
+        speed: 1,
+        derivative: 'sobel',
+        errorMessage: null,
+      },
+    };
+    const next = reducer(s, { type: 'CARVE_STARTED' });
+    expect(next.viz.status).toBe('computing');
+    expect(next.viz.currentSeam).toBe(0);
+    expect(next.viz.frame).toBeNull();
+    // viz.derivative is captured from the carve's selected gradient.
+    expect(next.viz.derivative).toBe('simple');
+  });
+
+  test('VISUALIZE_READY sets status to ready and totalSeams', () => {
+    const next = reducer(initialState, { type: 'VISUALIZE_READY', totalSeams: 42 });
+    expect(next.viz.status).toBe('ready');
+    expect(next.viz.totalSeams).toBe(42);
+  });
+
+  test('VISUALIZE_FRAME stores the frame', () => {
+    const frame = makeVizFrame(3);
+    const next = reducer(initialState, { type: 'VISUALIZE_FRAME', frame });
+    expect(next.viz.frame).toBe(frame);
+    expect(next.viz.currentSeam).toBe(3);
+  });
+
+  test('VISUALIZE_ERROR sets error status, message, and stops playback', () => {
+    const s: UiState = {
+      ...initialState,
+      viz: { ...initialState.viz, status: 'computing', isPlaying: true },
+    };
+    const next = reducer(s, { type: 'VISUALIZE_ERROR', message: 'boom' });
+    expect(next.viz.status).toBe('error');
+    expect(next.viz.errorMessage).toBe('boom');
+    expect(next.viz.isPlaying).toBe(false);
+  });
+
+  test('VISUALIZE_STAGE_CHANGED updates currentStage', () => {
+    const next = reducer(initialState, { type: 'VISUALIZE_STAGE_CHANGED', stage: 'energy' });
+    expect(next.viz.currentStage).toBe('energy');
+  });
+
+  test('VISUALIZE_SEAM_CHANGED updates currentSeam', () => {
+    const next = reducer(initialState, { type: 'VISUALIZE_SEAM_CHANGED', seam: 7 });
+    expect(next.viz.currentSeam).toBe(7);
+  });
+
+  test('VISUALIZE_PLAY_TOGGLED flips isPlaying', () => {
+    const next = reducer(initialState, { type: 'VISUALIZE_PLAY_TOGGLED' });
+    expect(next.viz.isPlaying).toBe(true);
+    const next2 = reducer(next, { type: 'VISUALIZE_PLAY_TOGGLED' });
+    expect(next2.viz.isPlaying).toBe(false);
+  });
+
+  test('VISUALIZE_SPEED_CHANGED updates speed', () => {
+    const next = reducer(initialState, { type: 'VISUALIZE_SPEED_CHANGED', speed: 4 });
+    expect(next.viz.speed).toBe(4);
+  });
+});

@@ -1,11 +1,25 @@
 import React, { useEffect, useReducer, useRef, useCallback } from 'react';
-import type { Engine, ResizeRequest, ResizeResponse, ResizeError, WasmStatus } from '../types';
+import type {
+  Engine,
+  ResizeRequest,
+  ResizeResponse,
+  ResizeError,
+  WasmStatus,
+  VisualizeInit,
+  VisualizeSeek,
+  VisualizeReady,
+  VisualizeFrameMsg,
+  VisualizeError,
+  VisualizerFrame,
+  VisualizerStage,
+  PlaybackSpeed,
+} from '../types';
 import Masthead from './Masthead';
 import Controls from './Controls';
 import CanvasTabs from './CanvasTabs';
 import Canvas from './Canvas';
 import TimingPanel from './TimingPanel';
-import Explainer from './Explainer';
+import Visualizer from './Visualizer';
 import { reducer, initialState } from './reducer';
 import { fileToImageData, urlToImageData } from './image-loading';
 import '../app.css';
@@ -18,6 +32,7 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wasmWorkerRef = useRef<Worker | null>(null);
   const tsWorkerRef = useRef<Worker | null>(null);
+  const vizWorkerRef = useRef<Worker | null>(null);
   const tickerStartRef = useRef<{ wasm: number; ts: number }>({ wasm: 0, ts: 0 });
 
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -93,6 +108,89 @@ export default function App() {
     return () => window.clearInterval(interval);
   }, [state.runs.wasm.status, state.runs.ts.status]);
 
+  const {
+    imageData: currentImageData,
+    derivative: currentDerivative,
+    targetWidth: currentTargetWidth,
+    targetHeight: currentTargetHeight,
+  } = state;
+
+  useEffect(() => {
+    // If the TS carve failed there's nothing to visualize — surface it instead
+    // of leaving the section stuck on "Computing…".
+    if (state.runs.ts.status === 'error') {
+      dispatch({
+        type: 'VISUALIZE_ERROR',
+        message: 'The carve failed, so the visualizer is unavailable.',
+      });
+      return;
+    }
+    if (state.runs.ts.status !== 'done' || !currentImageData) return;
+
+    const vizWorker = new Worker(new URL('../worker/carver.worker.ts', import.meta.url), {
+      type: 'module',
+      name: 'carver-viz',
+    });
+
+    vizWorker.onmessage = (
+      e: MessageEvent<VisualizeReady | VisualizeFrameMsg | VisualizeError>,
+    ) => {
+      const msg = e.data;
+      if (msg.type === 'VISUALIZE_READY') {
+        dispatch({ type: 'VISUALIZE_READY', totalSeams: msg.totalSeams });
+        return;
+      }
+      if (msg.type === 'VISUALIZE_ERROR') {
+        dispatch({ type: 'VISUALIZE_ERROR', message: msg.message });
+        return;
+      }
+      if (msg.type === 'VISUALIZE_FRAME') {
+        const frame: VisualizerFrame = {
+          seam: msg.seam,
+          imageData: new ImageData(new Uint8ClampedArray(msg.imageBuffer), msg.width, msg.height),
+          greyscaleMap: new ImageData(
+            new Uint8ClampedArray(msg.greyscaleBuffer),
+            msg.width,
+            msg.height,
+          ),
+          energyMap: new ImageData(new Uint8ClampedArray(msg.energyBuffer), msg.width, msg.height),
+          costHeatmap: new ImageData(new Uint8ClampedArray(msg.costBuffer), msg.width, msg.height),
+          seamPath: msg.seamPath,
+          kernelSample: msg.kernelSample,
+          costDetail: msg.costDetail,
+        };
+        dispatch({ type: 'VISUALIZE_FRAME', frame });
+      }
+    };
+
+    vizWorker.onerror = (e) =>
+      dispatch({ type: 'VISUALIZE_ERROR', message: e.message || 'Visualizer worker crashed' });
+
+    vizWorkerRef.current = vizWorker;
+
+    const req: VisualizeInit = {
+      type: 'VISUALIZE_INIT',
+      buffer: cloneBuffer(currentImageData.data),
+      width: currentImageData.width,
+      height: currentImageData.height,
+      derivative: currentDerivative,
+      targetWidth: currentTargetWidth,
+      targetHeight: currentTargetHeight,
+    };
+    vizWorker.postMessage(req, [req.buffer]);
+
+    return () => vizWorker.terminate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.runs.ts.status]); // intentionally narrow — fires once per TS carve completion
+
+  useEffect(() => {
+    if (state.viz.status !== 'ready' || !vizWorkerRef.current) return;
+    vizWorkerRef.current.postMessage({
+      type: 'VISUALIZE_SEEK',
+      seam: state.viz.currentSeam,
+    } satisfies VisualizeSeek);
+  }, [state.viz.currentSeam, state.viz.status]);
+
   const handleSample = useCallback((key: 'balloon' | 'tower') => {
     urlToImageData(`${import.meta.env.BASE_URL}samples/${key}.jpg`)
       .then((imageData) => dispatch({ type: 'IMAGE_LOADED', imageData, sampleKey: key }))
@@ -145,6 +243,24 @@ export default function App() {
     a.download = 'carved.png';
     a.click();
   }, []);
+
+  const handleStageChange = useCallback((stage: VisualizerStage) => {
+    dispatch({ type: 'VISUALIZE_STAGE_CHANGED', stage });
+  }, []);
+
+  const handleSeamChange = useCallback((seam: number) => {
+    dispatch({ type: 'VISUALIZE_SEAM_CHANGED', seam });
+  }, []);
+
+  const handlePlayToggle = useCallback(() => {
+    dispatch({ type: 'VISUALIZE_PLAY_TOGGLED' });
+  }, []);
+
+  const handleSpeedCycle = useCallback(() => {
+    const speeds: PlaybackSpeed[] = [0.5, 1, 2, 4];
+    const next = speeds[(speeds.indexOf(state.viz.speed) + 1) % speeds.length];
+    dispatch({ type: 'VISUALIZE_SPEED_CHANGED', speed: next });
+  }, [state.viz.speed]);
 
   const displayedImageData = state.activeTab === 'carved' ? state.carvedImageData : state.imageData;
 
@@ -209,7 +325,15 @@ export default function App() {
         <Canvas imageData={displayedImageData} canvasRef={canvasRef} style={canvasStyle} />
       </div>
       <TimingPanel runs={state.runs} wasmAvailable={state.wasm === 'available'} />
-      <Explainer />
+      <Visualizer
+        viz={state.viz}
+        originalWidth={state.imageData?.width ?? 0}
+        originalHeight={state.imageData?.height ?? 0}
+        onStageChange={handleStageChange}
+        onSeamChange={handleSeamChange}
+        onPlayToggle={handlePlayToggle}
+        onSpeedCycle={handleSpeedCycle}
+      />
     </div>
   );
 }
