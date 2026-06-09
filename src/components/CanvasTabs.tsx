@@ -25,18 +25,20 @@ export default function CanvasTabs({ activeTab, originalSize, carvedSize, onTabC
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLButtonElement>) => {
+      const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (dir === 0) return;
       const idx = TABS.indexOf(activeTab);
-      if (e.key === 'ArrowRight') {
-        const next = (idx + 1) % TABS.length;
-        onTabChange(TABS[next]);
-        tabRefs.current[next]?.focus();
-      } else if (e.key === 'ArrowLeft') {
-        const prev = (idx - 1 + TABS.length) % TABS.length;
-        onTabChange(TABS[prev]);
-        tabRefs.current[prev]?.focus();
-      }
+      const enabled = (tab: (typeof TABS)[number]) =>
+        tab === 'original' ? originalSize !== null : carvedSize !== null;
+      let next = idx;
+      do {
+        next = (next + dir + TABS.length) % TABS.length;
+      } while (!enabled(TABS[next]) && next !== idx);
+      if (next === idx) return;
+      onTabChange(TABS[next]);
+      tabRefs.current[next]?.focus();
     },
-    [activeTab, onTabChange],
+    [activeTab, originalSize, carvedSize, onTabChange],
   );
 
   const sizes: Record<(typeof TABS)[number], Size | null> = {
