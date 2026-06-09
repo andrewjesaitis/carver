@@ -168,37 +168,39 @@ export default function Visualizer({
         ))}
       </div>
       <div className="visualizer-body">
-        <div className="visualizer-canvas-wrap" style={canvasAreaStyle}>
-          <VisualizerCanvas
-            imageData={activeImageData}
-            seamPath={showSeam ? frame.seamPath : undefined}
-            marker={marker}
-            style={canvasStyle}
+        <div className="visualizer-canvas-col">
+          <div className="visualizer-canvas-wrap" style={canvasAreaStyle}>
+            <VisualizerCanvas
+              imageData={activeImageData}
+              seamPath={showSeam ? frame.seamPath : undefined}
+              marker={marker}
+              style={canvasStyle}
+            />
+          </div>
+          <p className="visualizer-caption">{CAPTIONS[currentStage]}</p>
+          <PlaybackControls
+            currentSeam={currentSeam}
+            currentStage={currentStage}
+            totalSeams={totalSeams}
+            isPlaying={isPlaying}
+            speed={speed}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onFirst={() => {
+              onSeamChange(0);
+              onStageChange('image');
+            }}
+            onLast={() => {
+              onSeamChange(totalSeams - 1);
+              onStageChange('seam');
+            }}
+            onPlayToggle={onPlayToggle}
+            onSpeedCycle={onSpeedCycle}
           />
         </div>
-      </div>
-      <p className="visualizer-caption">{CAPTIONS[currentStage]}</p>
-      <PlaybackControls
-        currentSeam={currentSeam}
-        currentStage={currentStage}
-        totalSeams={totalSeams}
-        isPlaying={isPlaying}
-        speed={speed}
-        onPrev={handlePrev}
-        onNext={handleNext}
-        onFirst={() => {
-          onSeamChange(0);
-          onStageChange('image');
-        }}
-        onLast={() => {
-          onSeamChange(totalSeams - 1);
-          onStageChange('seam');
-        }}
-        onPlayToggle={onPlayToggle}
-        onSpeedCycle={onSpeedCycle}
-      />
-      <div className="visualizer-inspector">
-        <StageInspector stage={currentStage} frame={frame} derivative={viz.derivative} />
+        <div className="visualizer-inspector">
+          <StageInspector stage={currentStage} frame={frame} derivative={viz.derivative} />
+        </div>
       </div>
     </section>
   );
