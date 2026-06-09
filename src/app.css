@@ -11,9 +11,15 @@
   --fg-body: #2a2a2a;
   --surface: #ffffff;
   --border: #e3e3e3;
+  --border-hover: #d0d0d0;
   --surface-alt: #e5e5e4;
   --accent: #151515;
   --accent-fg: #f5f5f4;
+
+  --color-pos: #1a6c2e;
+  --color-neg: #b22222;
+  --color-highlight: #e6a800;
+  --color-danger: #ef4444;
 
   --serif: 'STIX Two Text', Georgia, ui-serif, serif;
   --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
