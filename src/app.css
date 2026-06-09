@@ -126,6 +126,7 @@ body {
 .btn-primary {
   background: var(--accent);
   color: var(--accent-fg);
+  border: 1px solid var(--accent);
 }
 .btn-primary:disabled,
 .btn-secondary:disabled {
@@ -634,7 +635,6 @@ body {
     --color-danger: #f87171;
   }
 }
-
 /* Keyboard focus ring */
 :focus-visible {
   outline: 2px solid var(--accent);
