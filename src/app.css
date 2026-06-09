@@ -11,9 +11,15 @@
   --fg-body: #2a2a2a;
   --surface: #ffffff;
   --border: #e3e3e3;
+  --border-hover: #d0d0d0;
   --surface-alt: #e5e5e4;
   --accent: #151515;
   --accent-fg: #f5f5f4;
+
+  --color-pos: #1a6c2e;
+  --color-neg: #b22222;
+  --color-highlight: #e6a800;
+  --color-danger: #ef4444;
 
   --serif: 'STIX Two Text', Georgia, ui-serif, serif;
   --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -120,6 +126,7 @@ body {
 .btn-primary {
   background: var(--accent);
   color: var(--accent-fg);
+  border: 1px solid var(--accent);
 }
 .btn-primary:disabled,
 .btn-secondary:disabled {
@@ -261,7 +268,7 @@ body {
 .stage-tab {
   flex: 1;
   padding: 0.35rem 0;
-  background: #e5e5e4;
+  background: var(--surface-alt);
   border: none;
   border-radius: 3px;
   font-family: var(--sans);
@@ -273,8 +280,8 @@ body {
 }
 
 .stage-tab--active {
-  background: #151515;
-  color: #f5f5f4;
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 
 /* Canvas + inspector */
@@ -318,7 +325,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.4rem 0.75rem;
@@ -336,23 +343,23 @@ body {
   padding: 0.25rem 0.4rem;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #767676;
+  color: var(--fg-muted);
   border-radius: 3px;
 }
 
 .playback-nav button:hover {
-  background: #f5f5f4;
-  color: #151515;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .playback-nav button:nth-child(3) {
-  background: #151515;
-  color: #f5f5f4;
+  background: var(--accent);
+  color: var(--accent-fg);
   padding: 0.25rem 0.6rem;
 }
 
 .playback-nav button:nth-child(3):hover {
-  background: #333;
+  background: var(--fg);
 }
 
 .playback-counter {
@@ -362,24 +369,24 @@ body {
 }
 
 .playback-speed {
-  background: #e3e3e3;
+  background: var(--border);
   border: none;
   border-radius: 3px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
-  color: #151515;
+  color: var(--fg);
   cursor: pointer;
   font-family: var(--sans);
 }
 
 .playback-speed:hover {
-  background: #d0d0d0;
+  background: var(--border-hover);
 }
 
 /* Shared detail-pane box (energy, greyscale, cost) */
 .stage-detail,
 .energy-detail {
-  background: #f8f8f6;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.75rem;
@@ -420,7 +427,7 @@ body {
 .kernel-matrix-label {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #151515;
+  color: var(--fg);
   font-variant-numeric: tabular-nums;
 }
 
@@ -440,21 +447,21 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  background: #fff;
-  color: #767676;
+  background: var(--surface);
+  color: var(--fg-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .kernel-weight--pos {
-  color: #1a6c2e;
+  color: var(--color-pos);
 }
 
 .kernel-weight--neg {
-  color: #b22222;
+  color: var(--color-neg);
 }
 
 .kernel-weight--center {
-  outline: 2px solid #e6a800;
+  outline: 2px solid var(--color-highlight);
   outline-offset: -2px;
 }
 
@@ -489,7 +496,7 @@ body {
 }
 
 .energy-arrow-label {
-  fill: #ffcc00;
+  fill: var(--color-highlight);
   font-weight: 700;
   text-anchor: middle;
   paint-order: stroke;
@@ -508,7 +515,7 @@ body {
 }
 
 .kernel-cell--center {
-  outline: 2px solid #e6a800;
+  outline: 2px solid var(--color-highlight);
   outline-offset: -1px;
 }
 
@@ -525,7 +532,7 @@ body {
 }
 
 .kernel-stat-value {
-  color: #151515;
+  color: var(--fg);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
@@ -537,13 +544,13 @@ body {
 .energy-result {
   margin-top: 0.15rem;
   font-size: 0.8125rem;
-  color: #151515;
+  color: var(--fg);
   font-variant-numeric: tabular-nums;
 }
 
 /* Cost detail pane */
 .cost-detail {
-  background: #f8f8f6;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.75rem;
@@ -562,8 +569,8 @@ body {
 .cost-formula {
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 0.78rem;
-  color: #151515;
-  background: #fff;
+  color: var(--fg);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 0.5rem 0.6rem;
@@ -579,7 +586,7 @@ body {
 }
 
 .cost-cell {
-  background: #151515;
+  background: var(--accent);
   border-radius: 1px;
   padding: 2px 1px;
   display: flex;
@@ -588,18 +595,38 @@ body {
 }
 
 .cost-cell--min {
-  outline: 2px solid #ef4444;
+  outline: 2px solid var(--color-danger);
   outline-offset: -1px;
 }
 
 .cost-arrow {
   font-size: 0.55rem;
-  color: #f5f5f4;
+  color: var(--accent-fg);
   line-height: 1;
 }
 
 .cost-value {
   font-size: 0.5rem;
-  color: #aaa;
+  color: var(--fg-muted);
   font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a18;
+    --fg: #f0f0ee;
+    --fg-muted: #9a9a96;
+    --fg-body: #d4d4d0;
+    --surface: #242422;
+    --border: #3a3a38;
+    --border-hover: #4a4a48;
+    --surface-alt: #2e2e2c;
+    --accent: #f0f0ee;
+    --accent-fg: #1a1a18;
+
+    --color-pos: #4ade80;
+    --color-neg: #f87171;
+    --color-highlight: #e6a800;
+    --color-danger: #f87171;
+  }
 }
