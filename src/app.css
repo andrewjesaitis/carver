@@ -126,6 +126,7 @@ body {
 .btn-primary {
   background: var(--accent);
   color: var(--accent-fg);
+  border: 1px solid var(--accent);
 }
 .btn-primary:disabled,
 .btn-secondary:disabled {
