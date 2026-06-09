@@ -176,7 +176,7 @@ export default function Visualizer({
         {STAGES.map((s, i) => (
           <button
             key={s}
-            ref={el => {
+            ref={(el) => {
               stageTabRefs.current[i] = el;
             }}
             type="button"

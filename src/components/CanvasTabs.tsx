@@ -55,7 +55,7 @@ export default function CanvasTabs({ activeTab, originalSize, carvedSize, onTabC
       {TABS.map((tab, i) => (
         <button
           key={tab}
-          ref={el => {
+          ref={(el) => {
             tabRefs.current[i] = el;
           }}
           type="button"
