@@ -1,5 +1,5 @@
-import { useEffect, useCallback } from 'react';
-import type { CSSProperties } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import type { VisualizerStage } from '../types';
 import type { VizState } from './reducer';
 import VisualizerCanvas from './VisualizerCanvas';
@@ -92,6 +92,23 @@ export default function Visualizer({
     }
   }, [stageIdx, viz.currentSeam, onStageChange, onSeamChange]);
 
+  const stageTabRefs = useRef<Array<HTMLButtonElement | null>>(STAGES.map(() => null));
+
+  const handleStageKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLButtonElement>) => {
+      if (e.key === 'ArrowRight') {
+        const nextIdx = (stageIdx + 1) % STAGES.length;
+        onStageChange(STAGES[nextIdx]);
+        stageTabRefs.current[nextIdx]?.focus();
+      } else if (e.key === 'ArrowLeft') {
+        const prevIdx = (stageIdx - 1 + STAGES.length) % STAGES.length;
+        onStageChange(STAGES[prevIdx]);
+        stageTabRefs.current[prevIdx]?.focus();
+      }
+    },
+    [stageIdx, onStageChange],
+  );
+
   useEffect(() => {
     if (!viz.isPlaying) return;
     const ms = 1000 / viz.speed;
@@ -155,12 +172,20 @@ export default function Visualizer({
     <section className="visualizer">
       <div className="visualizer-label">how seam carving works</div>
       <p className="visualizer-intro">{INTRO}</p>
-      <div className="visualizer-stage-tabs">
-        {STAGES.map((s) => (
+      <div role="tablist" aria-label="Visualizer stage" className="visualizer-stage-tabs">
+        {STAGES.map((s, i) => (
           <button
             key={s}
+            ref={el => {
+              stageTabRefs.current[i] = el;
+            }}
+            type="button"
+            role="tab"
+            aria-selected={s === currentStage}
+            tabIndex={s === currentStage ? 0 : -1}
             className={`stage-tab${s === currentStage ? ' stage-tab--active' : ''}`}
             onClick={() => onStageChange(s)}
+            onKeyDown={handleStageKeyDown}
             title={STAGE_TOOLTIPS[s]}
           >
             {STAGE_LABELS[s]}
